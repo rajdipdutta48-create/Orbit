@@ -1,0 +1,45 @@
+#ifndef TOKEN_H
+#define TOKEN_H
+
+#include <string>
+
+// Every possible type of token in Orbit
+enum class TokenType
+{
+    // Keywords
+    LET,
+    PRINT,
+
+    // Identifiers and literals
+    IDENTIFIER,
+    NUMBER,
+
+    // Operators
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    EQUAL,
+
+    // Symbols
+    LEFT_PAREN,
+    RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
+    SEMICOLON,
+
+    // Special token
+    END_OF_FILE
+};
+
+class Token
+{
+public:
+    TokenType type;
+    std::string lexeme;
+    int line;
+
+    Token(TokenType type, const std::string& lexeme, int line);
+};
+
+#endif

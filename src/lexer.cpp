@@ -12,12 +12,12 @@ Lexer::Lexer(const std::string& source)
     keywords["print"] = TokenType::PRINT;
 }
 
-bool Lexer::isAtEnd()
+bool Lexer::isAtEnd()//tells us if the current has reached the end or not
 {
     return current >= source.length();
 }
 
-char Lexer::peek()
+char Lexer::peek()//returns the character of source which is at current position
 {
     if (isAtEnd())
         return '\0';
@@ -25,14 +25,37 @@ char Lexer::peek()
     return source[current];
 }
 
-char Lexer::advance()
+char Lexer::advance()//advances to the next iteration
 {
     return source[current++];
 }
 
-bool Lexer::isAlpha(char c)
+bool Lexer::isAlpha(char c)//tells us if the character is an alphabet or not
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
            (c == '_');
+}
+
+void Lexer::identifier()//lexer making the sequence of tokens
+{
+    std::string word;
+
+    while (isAlpha(peek()))
+    {
+        word += advance();
+    }
+
+    if (keywords.find(word) != keywords.end())
+    {
+        tokens.push_back(
+            Token(keywords[word], word, line)
+        );
+    }
+    else
+    {
+        tokens.push_back(
+            Token(TokenType::IDENTIFIER, word, line)
+        );
+    }
 }

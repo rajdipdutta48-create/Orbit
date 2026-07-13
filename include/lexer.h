@@ -29,6 +29,8 @@ private:
 
     bool isAlpha(char c);
 
+    void identifier();
+
 public:
 
     Lexer(const std::string& source);

@@ -18,6 +18,12 @@ private:
 
     int line;
 
+    bool isAtEnd();
+
+    char advance();
+
+    char peek();
+
 public:
 
     Lexer(const std::string& source);

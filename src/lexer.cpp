@@ -7,11 +7,16 @@ Lexer::Lexer(const std::string& source)
     this->current = 0;
 
     this->line = 1;
+
+    keywords["let"] = TokenType::LET;
+    keywords["print"] = TokenType::PRINT;
 }
+
 bool Lexer::isAtEnd()
 {
     return current >= source.length();
 }
+
 char Lexer::peek()
 {
     if (isAtEnd())
@@ -19,7 +24,15 @@ char Lexer::peek()
 
     return source[current];
 }
+
 char Lexer::advance()
 {
     return source[current++];
+}
+
+bool Lexer::isAlpha(char c)
+{
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c == '_');
 }

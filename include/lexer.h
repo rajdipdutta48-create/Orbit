@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "token.h"
 
@@ -14,6 +15,8 @@ private:
 
     std::vector<Token> tokens;
 
+    std::unordered_map<std::string, TokenType> keywords;
+
     int current;
 
     int line;
@@ -23,6 +26,8 @@ private:
     char advance();
 
     char peek();
+
+    bool isAlpha(char c);
 
 public:
 

@@ -33,6 +33,10 @@ private:
 
     void scanToken();
 
+    bool isDigit(char c);
+
+    void number();
+
 public:
    
     Lexer(const std::string& source);

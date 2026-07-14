@@ -122,6 +122,12 @@ void Lexer::scanToken()//Returns the current character without advancing the rea
                 identifier();
             }
 
+            else if (isDigit(c))
+            {
+                current--;
+                number();
+            }
+
             break;
     }
 }
@@ -134,4 +140,23 @@ std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector
     }
 
     return tokens;
+}
+
+bool Lexer::isDigit(char c)//checks if the character is a number
+{
+    return c >= '0' && c <= '9';
+}
+
+void Lexer::number()//stores the string containing digits as token
+{
+    std::string value;
+
+    while (isDigit(peek()))
+    {
+        value += advance();
+    }
+
+    tokens.push_back(
+        Token(TokenType::NUMBER, value, line)
+    );
 }

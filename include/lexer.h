@@ -10,7 +10,6 @@
 class Lexer
 {
 private:
-
     std::string source;
 
     std::vector<Token> tokens;
@@ -34,7 +33,7 @@ private:
     bool isAlphaNumeric(char c);
 
     void identifier();
-     
+
     void number();
 
     void stringLiteral();
@@ -44,11 +43,9 @@ private:
     void scanToken();
 
 public:
-   
-    Lexer(const std::string& source);
+    Lexer(const std::string &source);
 
     std::vector<Token> scanTokens();
-
 };
 
 #endif

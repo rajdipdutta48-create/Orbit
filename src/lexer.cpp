@@ -1,6 +1,6 @@
 #include "../include/lexer.h"
 
-Lexer::Lexer(const std::string& source)
+Lexer::Lexer(const std::string &source)
 {
     this->source = source;
 
@@ -12,12 +12,12 @@ Lexer::Lexer(const std::string& source)
     keywords["print"] = TokenType::PRINT;
 }
 
-bool Lexer::isAtEnd()//tells us if the current has reached the end or not.
+bool Lexer::isAtEnd() // tells us if the current has reached the end or not.
 {
     return current >= source.length();
 }
 
-char Lexer::peek()//returns the character of source which is at current position.
+char Lexer::peek() // returns the character of source which is at current position.
 {
     if (isAtEnd())
         return '\0';
@@ -25,19 +25,19 @@ char Lexer::peek()//returns the character of source which is at current position
     return source[current];
 }
 
-char Lexer::advance()//advances to the next iteration returning the current element.
+char Lexer::advance() // advances to the next iteration returning the current element.
 {
     return source[current++];
 }
 
-bool Lexer::isAlpha(char c)//tells us if the character is an alphabet or not.
+bool Lexer::isAlpha(char c) // tells us if the character is an alphabet or not.
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
            (c == '_');
 }
 
-void Lexer::identifier()// Reads a complete identifier or keyword and creates the corresponding token.
+void Lexer::identifier() // Reads a complete identifier or keyword and creates the corresponding token.
 {
     std::string word;
 
@@ -45,114 +45,159 @@ void Lexer::identifier()// Reads a complete identifier or keyword and creates th
     {
         word += advance();
     }
-     if (word == "comet" && peek() == ':')//skip
+    if (word == "comet" && peek() == ':') // skip
     {
-    advance();
+        advance();
 
-    skipComment();
+        skipComment();
 
-    return;
+        return;
     }
     if (keywords.find(word) != keywords.end())
     {
         tokens.push_back(
-            Token(keywords[word], word, line)
-        );
+            Token(keywords[word], word, line));
     }
     else
     {
         tokens.push_back(
-            Token(TokenType::IDENTIFIER, word, line)
-        );
+            Token(TokenType::IDENTIFIER, word, line));
     }
 }
 
-void Lexer::scanToken()// Processes one lexical unit from the source code and creates the appropriate token.
+void Lexer::scanToken() // Processes one lexical unit from the source code and creates the appropriate token.
 {
     char c = advance();
 
-    switch(c)
+    switch (c)
     {
-        case '+':
+    case '+':
+        tokens.push_back(
+            Token(TokenType::PLUS, "+", line));
+        break;
+
+    case '-':
+        tokens.push_back(
+            Token(TokenType::MINUS, "-", line));
+        break;
+
+    case '*':
+        tokens.push_back(
+            Token(TokenType::STAR, "*", line));
+        break;
+
+    case '/':
+        tokens.push_back(
+            Token(TokenType::SLASH, "/", line));
+        break;
+
+    case '=':
+
+        if (peek() == '=')
+        {
+            advance();
+
             tokens.push_back(
-                Token(TokenType::PLUS, "+", line)
-            );
-            break;
-
-        case '-':
+                Token(TokenType::EQUAL_EQUAL, "==", line));
+        }
+        else
+        {
             tokens.push_back(
-                Token(TokenType::MINUS, "-", line)
-            );
-            break;
+                Token(TokenType::EQUAL, "=", line));
+        }
+        break;
 
-        case '*':
+    case '<':
+
+        if (peek() == '=')
+        {
+            advance();
+
             tokens.push_back(
-                Token(TokenType::STAR, "*", line)
-            );
-            break;
-
-        case '/':
+                Token(TokenType::LESS_EQUAL, "<=", line));
+        }
+        else
+        {
             tokens.push_back(
-                Token(TokenType::SLASH, "/", line)
-            );
-            break;
+                Token(TokenType::LESS, "<", line));
+        }
 
-        case '=':
+        break;
+
+    case '>':
+
+        if (peek() == '=')
+        {
+            advance();
+
             tokens.push_back(
-                Token(TokenType::EQUAL, "=", line)
-            );
-            break;
-
-        case ';':
+                Token(TokenType::GREATER_EQUAL, ">=", line));
+        }
+        else
+        {
             tokens.push_back(
-                Token(TokenType::SEMICOLON, ";", line)
-            );
-            break;
+                Token(TokenType::GREATER, ">", line));
+        }
 
-        case '(':
+        break;
+    case '!':
+
+        if (peek() == '=')
+        {
+            advance();
+
             tokens.push_back(
-                Token(TokenType::LEFT_PAREN, "(", line)
-            );
-            break;
+                Token(TokenType::NOT_EQUAL, "!=", line));
+        }
 
-        case ')':
-            tokens.push_back(
-                Token(TokenType::RIGHT_PAREN, ")", line)
-            );
-            break;
-        
-        case ' ':
-        case '\t':
-        case '\r':
-            break;
+        break;
+    case ';':
+        tokens.push_back(
+            Token(TokenType::SEMICOLON, ";", line));
+        break;
 
-        case '\n':
-             line++;
-            break;
+    case '(':
+        tokens.push_back(
+            Token(TokenType::LEFT_PAREN, "(", line));
+        break;
 
-        case '"':
-            stringLiteral();
-            break;
-        
-        default:
+    case ')':
+        tokens.push_back(
+            Token(TokenType::RIGHT_PAREN, ")", line));
+        break;
 
-            if(isAlpha(c))
-            {
-                current--;
-                identifier();
-            }
+    case ' ':
+    case '\t':
+    case '\r':
+        break;
 
-            else if (isDigit(c))
-            {
-                current--;
-                number();
-            }
+    case '\n':
+        line++;
+        break;
 
-            break;
+    case '"':
+        stringLiteral();
+        break;
+
+    default:
+
+        if (isAlpha(c))
+        {
+            current--;
+            identifier();
+        }
+
+        else if (isDigit(c))
+        {
+            current--;
+            number();
+        }
+
+        break;
     }
 }
 
-std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector.
+std::vector<Token> Lexer::scanTokens() // used to fill the tokens vector.
 {
     while (!isAtEnd())
     {
@@ -162,12 +207,12 @@ std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector.
     return tokens;
 }
 
-bool Lexer::isDigit(char c)//checks if the character is a number.
+bool Lexer::isDigit(char c) // checks if the character is a number.
 {
     return c >= '0' && c <= '9';
 }
 
-void Lexer::number()// Reads a complete numeric literal and creates a NUMBER token.
+void Lexer::number() // Reads a complete numeric literal and creates a NUMBER token.
 {
     std::string value;
 
@@ -177,16 +222,15 @@ void Lexer::number()// Reads a complete numeric literal and creates a NUMBER tok
     }
 
     tokens.push_back(
-        Token(TokenType::NUMBER, value, line)
-    );
+        Token(TokenType::NUMBER, value, line));
 }
 
-bool Lexer::isAlphaNumeric(char c)//checks if the character is either numeric or alphabet.
+bool Lexer::isAlphaNumeric(char c) // checks if the character is either numeric or alphabet.
 {
     return isAlpha(c) || isDigit(c);
 }
 
-void Lexer::stringLiteral()//generate string type tokens.
+void Lexer::stringLiteral() // generate string type tokens.
 {
     std::string value;
 
@@ -208,11 +252,10 @@ void Lexer::stringLiteral()//generate string type tokens.
     advance();
 
     tokens.push_back(
-        Token(TokenType::STRING, value, line)
-    );
+        Token(TokenType::STRING, value, line));
 }
 
-void Lexer::skipComment()//ignores comments inside code
+void Lexer::skipComment() // ignores comments inside code
 {
     while (!isAtEnd())
     {

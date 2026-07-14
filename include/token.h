@@ -21,6 +21,12 @@ enum class TokenType
     STAR,
     SLASH,
     EQUAL,
+    EQUAL_EQUAL,
+    NOT_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
 
     // Symbols
     LEFT_PAREN,
@@ -40,7 +46,7 @@ public:
     std::string lexeme;
     int line;
 
-    Token(TokenType type, const std::string& lexeme, int line);
+    Token(TokenType type, const std::string &lexeme, int line);
 };
 
 #endif

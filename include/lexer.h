@@ -23,21 +23,23 @@ private:
 
     bool isAtEnd();
 
-    char advance();
-
     char peek();
+
+    char advance();
 
     bool isAlpha(char c);
 
-    void identifier();
-
-    void scanToken();
-
     bool isDigit(char c);
 
+    bool isAlphaNumeric(char c);
+
+    void identifier();
+     
     void number();
 
-    bool isAlphaNumeric(char c);
+    void stringLiteral();
+
+    void scanToken();
 
 public:
    

@@ -12,12 +12,12 @@ Lexer::Lexer(const std::string& source)
     keywords["print"] = TokenType::PRINT;
 }
 
-bool Lexer::isAtEnd()//tells us if the current has reached the end or not
+bool Lexer::isAtEnd()//tells us if the current has reached the end or not.
 {
     return current >= source.length();
 }
 
-char Lexer::peek()//returns the character of source which is at current position
+char Lexer::peek()//returns the character of source which is at current position.
 {
     if (isAtEnd())
         return '\0';
@@ -25,19 +25,19 @@ char Lexer::peek()//returns the character of source which is at current position
     return source[current];
 }
 
-char Lexer::advance()//advances to the next iteration returning the current element
+char Lexer::advance()//advances to the next iteration returning the current element.
 {
     return source[current++];
 }
 
-bool Lexer::isAlpha(char c)//tells us if the character is an alphabet or not
+bool Lexer::isAlpha(char c)//tells us if the character is an alphabet or not.
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
            (c == '_');
 }
 
-void Lexer::identifier()//lexer making the sequence of tokens
+void Lexer::identifier()// Reads a complete identifier or keyword and creates the corresponding token.
 {
     std::string word;
 
@@ -60,7 +60,7 @@ void Lexer::identifier()//lexer making the sequence of tokens
     }
 }
 
-void Lexer::scanToken()//Returns the current character without advancing the reading position.
+void Lexer::scanToken()// Processes one lexical unit from the source code and creates the appropriate token.
 {
     char c = advance();
 
@@ -113,7 +113,20 @@ void Lexer::scanToken()//Returns the current character without advancing the rea
                 Token(TokenType::RIGHT_PAREN, ")", line)
             );
             break;
+        
+        case ' ':
+        case '\t':
+        case '\r':
+            break;
 
+        case '\n':
+             line++;
+            break;
+
+        case '"':
+            stringLiteral();
+            break;
+        
         default:
 
             if(isAlpha(c))
@@ -132,7 +145,7 @@ void Lexer::scanToken()//Returns the current character without advancing the rea
     }
 }
 
-std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector
+std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector.
 {
     while (!isAtEnd())
     {
@@ -142,12 +155,12 @@ std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector
     return tokens;
 }
 
-bool Lexer::isDigit(char c)//checks if the character is a number
+bool Lexer::isDigit(char c)//checks if the character is a number.
 {
     return c >= '0' && c <= '9';
 }
 
-void Lexer::number()//stores the string containing digits as token
+void Lexer::number()// Reads a complete numeric literal and creates a NUMBER token.
 {
     std::string value;
 
@@ -161,7 +174,33 @@ void Lexer::number()//stores the string containing digits as token
     );
 }
 
-bool Lexer::isAlphaNumeric(char c)
+bool Lexer::isAlphaNumeric(char c)//checks if the character is either numeric or alphabet.
 {
     return isAlpha(c) || isDigit(c);
+}
+
+void Lexer::stringLiteral()//generate string type tokens.
+{
+    std::string value;
+
+    while (!isAtEnd() && peek() != '"')
+    {
+        if (peek() == '\n')
+        {
+            line++;
+        }
+
+        value += advance();
+    }
+
+    if (isAtEnd())
+    {
+        return;
+    }
+
+    advance();
+
+    tokens.push_back(
+        Token(TokenType::STRING, value, line)
+    );
 }

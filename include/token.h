@@ -13,6 +13,7 @@ enum class TokenType
     // Identifiers and literals
     IDENTIFIER,
     NUMBER,
+    STRING,
 
     // Operators
     PLUS,

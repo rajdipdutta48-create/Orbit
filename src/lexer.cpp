@@ -1,4 +1,5 @@
 #include "../include/lexer.h"
+#include <iostream>
 
 Lexer::Lexer(const std::string &source)
 {
@@ -192,7 +193,15 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
             current--;
             number();
         }
-
+        else
+        {
+            std::cout
+                << "Lexer Error: Unexpected character '"
+                << c
+                << "' at line "
+                << line
+                << std::endl;
+        }
         break;
     }
 }
@@ -203,7 +212,8 @@ std::vector<Token> Lexer::scanTokens() // used to fill the tokens vector.
     {
         scanToken();
     }
-
+    tokens.push_back( // this indicates the end of the code
+        Token(TokenType::END_OF_FILE, "", line));
     return tokens;
 }
 

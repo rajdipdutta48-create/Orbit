@@ -125,3 +125,13 @@ void Lexer::scanToken()//Returns the current character without advancing the rea
             break;
     }
 }
+
+std::vector<Token> Lexer::scanTokens()//used to fill the tokens vector
+{
+    while (!isAtEnd())
+    {
+        scanToken();
+    }
+
+    return tokens;
+}

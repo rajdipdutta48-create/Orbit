@@ -34,8 +34,10 @@ private:
     void scanToken();
 
 public:
-
+   
     Lexer(const std::string& source);
+
+    std::vector<Token> scanTokens();
 
 };
 

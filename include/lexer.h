@@ -31,6 +31,8 @@ private:
 
     void identifier();
 
+    void scanToken();
+
 public:
 
     Lexer(const std::string& source);

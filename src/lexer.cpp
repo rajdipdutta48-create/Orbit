@@ -45,7 +45,14 @@ void Lexer::identifier()// Reads a complete identifier or keyword and creates th
     {
         word += advance();
     }
+     if (word == "comet" && peek() == ':')//skip
+    {
+    advance();
 
+    skipComment();
+
+    return;
+    }
     if (keywords.find(word) != keywords.end())
     {
         tokens.push_back(
@@ -203,4 +210,28 @@ void Lexer::stringLiteral()//generate string type tokens.
     tokens.push_back(
         Token(TokenType::STRING, value, line)
     );
+}
+
+void Lexer::skipComment()//ignores comments inside code
+{
+    while (!isAtEnd())
+    {
+        std::string word;
+
+        while (!isAtEnd() && peek() != '\n')
+        {
+            word += advance();
+        }
+
+        if (word == "burn")
+        {
+            return;
+        }
+
+        if (!isAtEnd())
+        {
+            line++;
+            advance();
+        }
+    }
 }

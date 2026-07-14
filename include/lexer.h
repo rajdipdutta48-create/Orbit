@@ -39,6 +39,8 @@ private:
 
     void stringLiteral();
 
+    void skipComment();
+
     void scanToken();
 
 public:

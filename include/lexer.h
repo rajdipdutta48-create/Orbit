@@ -37,6 +37,8 @@ private:
 
     void number();
 
+    bool isAlphaNumeric(char c);
+
 public:
    
     Lexer(const std::string& source);

@@ -41,7 +41,7 @@ void Lexer::identifier()//lexer making the sequence of tokens
 {
     std::string word;
 
-    while (isAlpha(peek()))
+    while (isAlphaNumeric(peek()))
     {
         word += advance();
     }
@@ -159,4 +159,9 @@ void Lexer::number()//stores the string containing digits as token
     tokens.push_back(
         Token(TokenType::NUMBER, value, line)
     );
+}
+
+bool Lexer::isAlphaNumeric(char c)
+{
+    return isAlpha(c) || isDigit(c);
 }

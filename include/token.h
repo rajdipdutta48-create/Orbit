@@ -7,8 +7,9 @@
 enum class TokenType
 {
     // Keywords
-    LET,
-    PRINT,
+    DOCK,
+    TRANSMIT,
+    RECEIVE,
 
     // Identifiers and literals
     IDENTIFIER,

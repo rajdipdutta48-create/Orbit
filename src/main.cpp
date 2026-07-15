@@ -4,32 +4,11 @@
 
 int main()
 {
-  std::string source = R"(
-
-comet:
-
-This is Orbit.
-
-burn
-
-let age = 20;
-
-print("Hello");
-
-)";
-
+  std::string source;
+  
   Lexer lexer(source);
 
   std::vector<Token> tokens = lexer.scanTokens();
-
-  for (const Token &token : tokens)
-  {
-    std::cout
-        << token.lexeme
-        << "  "
-        << token.line
-        << std::endl;
-  }
 
   return 0;
 }

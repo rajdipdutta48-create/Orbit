@@ -9,8 +9,9 @@ Lexer::Lexer(const std::string &source)
 
     this->line = 1;
 
-    keywords["let"] = TokenType::LET;
-    keywords["print"] = TokenType::PRINT;
+    keywords["dock"] = TokenType::DOCK;
+    keywords["transmit"] = TokenType::TRANSMIT;
+    keywords["receive"] = TokenType::RECEIVE;
 }
 
 bool Lexer::isAtEnd() // tells us if the current has reached the end or not.

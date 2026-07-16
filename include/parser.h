@@ -26,6 +26,7 @@ private:
 
   bool match(TokenType type);
 
+  std::unique_ptr<Expr> primary();
 public:
   Parser(const std::vector<Token> &tokens);
 };

@@ -51,3 +51,14 @@ bool Parser::match(TokenType type)/* If the current token matches the expected t
 
   return false;
 }
+
+std::unique_ptr<Expr> Parser::primary()/*Parses the simplest expression (currently only literals)
+ and creates the corresponding AST node.*/
+{
+    if (match(TokenType::NUMBER))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    return nullptr;
+}

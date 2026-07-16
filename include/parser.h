@@ -14,6 +14,18 @@ private:
 
   int current;
 
+  bool isAtEnd();
+
+  Token peek();
+
+  Token previous();
+
+  Token advance();
+
+  bool check(TokenType type);
+
+  bool match(TokenType type);
+
 public:
   Parser(const std::vector<Token> &tokens);
 };

@@ -19,10 +19,14 @@ struct ArrayValue;
 // Currently supported:
 // - double
 // - bool
+// - string
+// - char
 // - array
 using Value = std::variant<
     double,
     bool,
+    std::string,
+    char,
     std::shared_ptr<ArrayValue>>;
 
 // Represents an Orbit array.
@@ -65,7 +69,8 @@ private:
 
 public:
     // Executes the complete Orbit program.
-    void interpret(const std::vector<std::unique_ptr<Stmt>>& statements);
+    void interpret(
+        const std::vector<std::unique_ptr<Stmt>>& statements);
 };
 
 #endif

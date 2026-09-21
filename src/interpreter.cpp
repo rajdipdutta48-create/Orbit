@@ -5,8 +5,11 @@
 Value Interpreter::evaluate(const Expr* expr)
 {
     // Evaluate a literal.
-    // Currently supports:
+    //
+    // Supported:
     // - numbers
+    // - strings
+    // - chars
     // - true
     // - false
     if (auto literal = dynamic_cast<const Literal*>(expr))
@@ -14,6 +17,24 @@ Value Interpreter::evaluate(const Expr* expr)
         if (literal->value.type == TokenType::NUMBER)
         {
             return std::stod(literal->value.lexeme);
+        }
+
+        // String literal.
+        //
+        // Example:
+        // "Orbit"
+        if (literal->value.type == TokenType::STRING)
+        {
+            return literal->value.lexeme;
+        }
+
+        // Character literal.
+        //
+        // Example:
+        // 'A'
+        if (literal->value.type == TokenType::CHAR)
+        {
+            return literal->value.lexeme[0];
         }
 
         if (literal->value.type == TokenType::TRUE)
@@ -47,8 +68,11 @@ Value Interpreter::evaluate(const Expr* expr)
     }
 
     // Evaluate an assignment.
-    // Example:
-    // age = 25;
+    //
+    // Examples:
+    //
+    // name = "Orbit";
+    // letter = 'A';
     if (auto assignment = dynamic_cast<const Assignment*>(expr))
     {
         // Assignment is only valid for an existing variable.
@@ -71,8 +95,11 @@ Value Interpreter::evaluate(const Expr* expr)
 
     // Evaluate an assignment to an array element.
     //
-    // Example:
+    // Examples:
+    //
     // numbers[1] = 99;
+    // names[1] = "Mars";
+    // letters[1] = 'Z';
     if (auto indexAssignment =
             dynamic_cast<const IndexAssignment*>(expr))
     {
@@ -109,7 +136,8 @@ Value Interpreter::evaluate(const Expr* expr)
                 "Array index cannot be negative");
         }
 
-        auto array = std::get<std::shared_ptr<ArrayValue>>(object);
+        auto array =
+            std::get<std::shared_ptr<ArrayValue>>(object);
 
         // Check that the index is inside the array.
         if (indexValue >= array->elements.size())
@@ -127,12 +155,16 @@ Value Interpreter::evaluate(const Expr* expr)
 
     // Evaluate a nebula array literal.
     //
-    // Example:
+    // Examples:
+    //
     // [10, 20, 30]
+    // ["Earth", "Mars"]
+    // ['A', 'B', 'C']
     //
     // Every element is evaluated first and then stored
     // inside the array.
-    if (auto nebula = dynamic_cast<const NebulaLiteral*>(expr))
+    if (auto nebula =
+            dynamic_cast<const NebulaLiteral*>(expr))
     {
         auto array = std::make_shared<ArrayValue>();
 
@@ -147,9 +179,13 @@ Value Interpreter::evaluate(const Expr* expr)
 
     // Evaluate array indexing.
     //
-    // Example:
+    // Examples:
+    //
     // numbers[0]
-    if (auto indexExpr = dynamic_cast<const IndexExpr*>(expr))
+    // names[1]
+    // letters[2]
+    if (auto indexExpr =
+            dynamic_cast<const IndexExpr*>(expr))
     {
         Value object = evaluate(indexExpr->object.get());
         Value index = evaluate(indexExpr->index.get());
@@ -183,7 +219,8 @@ Value Interpreter::evaluate(const Expr* expr)
                 "Array index cannot be negative");
         }
 
-        auto array = std::get<std::shared_ptr<ArrayValue>>(object);
+        auto array =
+            std::get<std::shared_ptr<ArrayValue>>(object);
 
         // Check that the index is inside the array.
         if (indexValue >= array->elements.size())
@@ -197,7 +234,9 @@ Value Interpreter::evaluate(const Expr* expr)
     }
 
     // Evaluate a unary expression.
+    //
     // Examples:
+    //
     // -10
     // -age
     // !true
@@ -237,21 +276,33 @@ Value Interpreter::evaluate(const Expr* expr)
         Value left = evaluate(binary->left.get());
         Value right = evaluate(binary->right.get());
 
-        // Arithmetic operators work with numbers.
         switch (binary->op.type)
         {
+        // Addition.
+        //
+        // Number + number
+        // String + string
         case TokenType::PLUS:
-            if (!std::holds_alternative<double>(left) ||
-                !std::holds_alternative<double>(right))
+
+            if (std::holds_alternative<double>(left) &&
+                std::holds_alternative<double>(right))
             {
-                throw RuntimeError(
-                    "Operands of '+' must be numbers");
+                return std::get<double>(left) +
+                       std::get<double>(right);
             }
 
-            return std::get<double>(left) +
-                   std::get<double>(right);
+            if (std::holds_alternative<std::string>(left) &&
+                std::holds_alternative<std::string>(right))
+            {
+                return std::get<std::string>(left) +
+                       std::get<std::string>(right);
+            }
+
+            throw RuntimeError(
+                "Operands of '+' must both be numbers or both be strings");
 
         case TokenType::MINUS:
+
             if (!std::holds_alternative<double>(left) ||
                 !std::holds_alternative<double>(right))
             {
@@ -263,6 +314,7 @@ Value Interpreter::evaluate(const Expr* expr)
                    std::get<double>(right);
 
         case TokenType::STAR:
+
             if (!std::holds_alternative<double>(left) ||
                 !std::holds_alternative<double>(right))
             {
@@ -274,6 +326,7 @@ Value Interpreter::evaluate(const Expr* expr)
                    std::get<double>(right);
 
         case TokenType::SLASH:
+
             if (!std::holds_alternative<double>(left) ||
                 !std::holds_alternative<double>(right))
             {
@@ -283,13 +336,14 @@ Value Interpreter::evaluate(const Expr* expr)
 
             if (std::get<double>(right) == 0)
             {
-                throw RuntimeError("Division by zero");
+                throw RuntimeError(
+                    "Division by zero");
             }
 
             return std::get<double>(left) /
                    std::get<double>(right);
 
-        // Comparison operators produce boolean values.
+        // Comparison operators currently work with numbers.
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
         case TokenType::GREATER:
@@ -302,8 +356,11 @@ Value Interpreter::evaluate(const Expr* expr)
                     "Comparison operands must be numbers");
             }
 
-            double leftValue = std::get<double>(left);
-            double rightValue = std::get<double>(right);
+            double leftValue =
+                std::get<double>(left);
+
+            double rightValue =
+                std::get<double>(right);
 
             if (binary->op.type == TokenType::LESS)
                 return leftValue < rightValue;
@@ -317,7 +374,12 @@ Value Interpreter::evaluate(const Expr* expr)
             return leftValue >= rightValue;
         }
 
-        // Equality works with numbers, booleans and arrays.
+        // Equality works with:
+        // - numbers
+        // - booleans
+        // - strings
+        // - chars
+        // - arrays
         case TokenType::EQUAL_EQUAL:
             return left == right;
 
@@ -326,6 +388,7 @@ Value Interpreter::evaluate(const Expr* expr)
 
         // Logical AND.
         case TokenType::AND:
+
             if (!std::holds_alternative<bool>(left) ||
                 !std::holds_alternative<bool>(right))
             {
@@ -338,6 +401,7 @@ Value Interpreter::evaluate(const Expr* expr)
 
         // Logical OR.
         case TokenType::OR:
+
             if (!std::holds_alternative<bool>(left) ||
                 !std::holds_alternative<bool>(right))
             {
@@ -349,14 +413,17 @@ Value Interpreter::evaluate(const Expr* expr)
                    std::get<bool>(right);
 
         default:
-            throw RuntimeError("Unknown binary operator");
+            throw RuntimeError(
+                "Unknown binary operator");
         }
     }
 
     // Evaluate a parenthesized expression.
-    if (auto grouping = dynamic_cast<const Grouping*>(expr))
+    if (auto grouping =
+            dynamic_cast<const Grouping*>(expr))
     {
-        return evaluate(grouping->expression.get());
+        return evaluate(
+            grouping->expression.get());
     }
 
     throw RuntimeError("Unknown expression");
@@ -373,17 +440,38 @@ void Interpreter::printValue(const Value& value)
     // Print booleans.
     else if (std::holds_alternative<bool>(value))
     {
-        std::cout << (std::get<bool>(value) ? "true" : "false");
+        std::cout
+            << (std::get<bool>(value)
+                    ? "true"
+                    : "false");
+    }
+
+    // Print strings.
+    else if (std::holds_alternative<std::string>(value))
+    {
+        std::cout
+            << std::get<std::string>(value);
+    }
+
+    // Print characters.
+    else if (std::holds_alternative<char>(value))
+    {
+        std::cout
+            << std::get<char>(value);
     }
 
     // Print nebula arrays.
-    else if (std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
+    else if (
+        std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
     {
-        auto array = std::get<std::shared_ptr<ArrayValue>>(value);
+        auto array =
+            std::get<std::shared_ptr<ArrayValue>>(value);
 
         std::cout << "[";
 
-        for (size_t i = 0; i < array->elements.size(); i++)
+        for (size_t i = 0;
+             i < array->elements.size();
+             i++)
         {
             // printValue() does not add a newline,
             // so nested values stay on the same line.
@@ -402,10 +490,15 @@ void Interpreter::printValue(const Value& value)
 void Interpreter::execute(const Stmt* stmt)
 {
     // Variable declaration:
+    //
     // dock age = 20;
-    if (auto var = dynamic_cast<const VarStmt*>(stmt))
+    // dock name = "Orbit";
+    // dock letter = 'O';
+    if (auto var =
+            dynamic_cast<const VarStmt*>(stmt))
     {
-        Value value = evaluate(var->initializer.get());
+        Value value =
+            evaluate(var->initializer.get());
 
         environment[var->name.lexeme] = value;
 
@@ -413,13 +506,19 @@ void Interpreter::execute(const Stmt* stmt)
     }
 
     // Nebula declaration:
+    //
     // nebula numbers = [10, 20, 30];
-    if (auto nebula = dynamic_cast<const NebulaStmt*>(stmt))
+    // nebula names = ["Earth", "Mars"];
+    // nebula letters = ['A', 'B', 'C'];
+    if (auto nebula =
+            dynamic_cast<const NebulaStmt*>(stmt))
     {
-        Value value = evaluate(nebula->initializer.get());
+        Value value =
+            evaluate(nebula->initializer.get());
 
         // The initializer must actually evaluate to an array.
-        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
+        if (!std::holds_alternative<
+                std::shared_ptr<ArrayValue>>(value))
         {
             throw RuntimeError(
                 "Nebula initializer must be an array");
@@ -431,10 +530,15 @@ void Interpreter::execute(const Stmt* stmt)
     }
 
     // Print statement:
+    //
     // transmit(age);
-    if (auto print = dynamic_cast<const PrintStmt*>(stmt))
+    // transmit(name);
+    // transmit(letter);
+    if (auto print =
+            dynamic_cast<const PrintStmt*>(stmt))
     {
-        Value value = evaluate(print->expression.get());
+        Value value =
+            evaluate(print->expression.get());
 
         printValue(value);
 
@@ -445,23 +549,21 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
-    // Input statement:
+    // Input statement.
     //
-    // receive(age);
-    // receive(numbers[1]);
-    if (auto input = dynamic_cast<const InputStmt*>(stmt))
+    // receive() accepts input according to the
+    // type of the target variable or array element.
+    if (auto input =
+            dynamic_cast<const InputStmt*>(stmt))
     {
-        double value;
-
-        std::cout << "Enter value: ";
-
-        std::cin >> value;
-
         // receive(variable);
         if (auto variable =
-                dynamic_cast<const Variable*>(input->target.get()))
+                dynamic_cast<const Variable*>(
+                    input->target.get()))
         {
-            auto it = environment.find(variable->name.lexeme);
+            auto it =
+                environment.find(
+                    variable->name.lexeme);
 
             if (it == environment.end())
             {
@@ -471,20 +573,87 @@ void Interpreter::execute(const Stmt* stmt)
                     "'");
             }
 
-            it->second = value;
+            Value& target = it->second;
+
+            std::cout << "Enter value: ";
+
+            // Number input.
+            if (std::holds_alternative<double>(target))
+            {
+                double value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    std::cin.clear();
+                    std::string invalid;
+                    std::cin >> invalid;
+
+                    throw RuntimeError(
+                        "receive() expects a number");
+                }
+
+                target = value;
+            }
+
+            // String input.
+            //
+            // Input is read until whitespace.
+            else if (std::holds_alternative<std::string>(target))
+            {
+                std::string value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    throw RuntimeError(
+                        "receive() expects a string");
+                }
+
+                target = value;
+            }
+
+            // Character input.
+            else if (std::holds_alternative<char>(target))
+            {
+                char value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    throw RuntimeError(
+                        "receive() expects a character");
+                }
+
+                target = value;
+            }
+
+            else
+            {
+                throw RuntimeError(
+                    "receive() does not support this variable type");
+            }
 
             return;
         }
 
         // receive(numbers[index]);
         if (auto indexExpr =
-                dynamic_cast<const IndexExpr*>(input->target.get()))
+                dynamic_cast<const IndexExpr*>(
+                    input->target.get()))
         {
-            Value object = evaluate(indexExpr->object.get());
-            Value index = evaluate(indexExpr->index.get());
+            Value object =
+                evaluate(indexExpr->object.get());
+
+            Value index =
+                evaluate(indexExpr->index.get());
 
             // The object being indexed must be an array.
-            if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+            if (!std::holds_alternative<
+                    std::shared_ptr<ArrayValue>>(object))
             {
                 throw RuntimeError(
                     "Only nebula arrays can be indexed");
@@ -497,7 +666,8 @@ void Interpreter::execute(const Stmt* stmt)
                     "Array index must be a number");
             }
 
-            double indexValue = std::get<double>(index);
+            double indexValue =
+                std::get<double>(index);
 
             // Array indexes must be whole numbers.
             if (std::floor(indexValue) != indexValue)
@@ -513,7 +683,8 @@ void Interpreter::execute(const Stmt* stmt)
             }
 
             auto array =
-                std::get<std::shared_ptr<ArrayValue>>(object);
+                std::get<
+                    std::shared_ptr<ArrayValue>>(object);
 
             // Check that the index is inside the array.
             if (indexValue >= array->elements.size())
@@ -522,9 +693,69 @@ void Interpreter::execute(const Stmt* stmt)
                     "Array index out of bounds");
             }
 
-            // Store the input inside the array.
-            array->elements[
-                static_cast<size_t>(indexValue)] = value;
+            Value& target =
+                array->elements[
+                    static_cast<size_t>(indexValue)];
+
+            std::cout << "Enter value: ";
+
+            // Number input.
+            if (std::holds_alternative<double>(target))
+            {
+                double value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    std::cin.clear();
+                    std::string invalid;
+                    std::cin >> invalid;
+
+                    throw RuntimeError(
+                        "receive() expects a number");
+                }
+
+                target = value;
+            }
+
+            // String input.
+            else if (std::holds_alternative<std::string>(target))
+            {
+                std::string value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    throw RuntimeError(
+                        "receive() expects a string");
+                }
+
+                target = value;
+            }
+
+            // Character input.
+            else if (std::holds_alternative<char>(target))
+            {
+                char value;
+
+                std::cin >> value;
+
+                if (std::cin.fail())
+                {
+                    throw RuntimeError(
+                        "receive() expects a character");
+                }
+
+                target = value;
+            }
+
+            else
+            {
+                throw RuntimeError(
+                    "receive() does not support this array element type");
+            }
 
             return;
         }
@@ -540,9 +771,11 @@ void Interpreter::execute(const Stmt* stmt)
     // } else {
     //     statements
     // }
-    if (auto ifStmt = dynamic_cast<const IfStmt*>(stmt))
+    if (auto ifStmt =
+            dynamic_cast<const IfStmt*>(stmt))
     {
-        Value condition = evaluate(ifStmt->condition.get());
+        Value condition =
+            evaluate(ifStmt->condition.get());
 
         // The condition of a when statement must be boolean.
         if (!std::holds_alternative<bool>(condition))
@@ -554,7 +787,8 @@ void Interpreter::execute(const Stmt* stmt)
         if (std::get<bool>(condition))
         {
             // Execute the when branch.
-            for (const auto& statement : ifStmt->thenBranch)
+            for (const auto& statement :
+                 ifStmt->thenBranch)
             {
                 execute(statement.get());
             }
@@ -562,7 +796,8 @@ void Interpreter::execute(const Stmt* stmt)
         else
         {
             // Execute the else branch if it exists.
-            for (const auto& statement : ifStmt->elseBranch)
+            for (const auto& statement :
+                 ifStmt->elseBranch)
             {
                 execute(statement.get());
             }
@@ -576,13 +811,17 @@ void Interpreter::execute(const Stmt* stmt)
     // orbiting (condition) {
     //     statements
     // }
-    if (auto whileStmt = dynamic_cast<const WhileStmt*>(stmt))
+    if (auto whileStmt =
+            dynamic_cast<const WhileStmt*>(stmt))
     {
         while (true)
         {
-            Value condition = evaluate(whileStmt->condition.get());
+            Value condition =
+                evaluate(
+                    whileStmt->condition.get());
 
-            // The condition of an orbiting statement must be boolean.
+            // The condition of an orbiting statement
+            // must be boolean.
             if (!std::holds_alternative<bool>(condition))
             {
                 throw RuntimeError(
@@ -596,7 +835,8 @@ void Interpreter::execute(const Stmt* stmt)
             }
 
             // Execute every statement in the loop body.
-            for (const auto& statement : whileStmt->body)
+            for (const auto& statement :
+                 whileStmt->body)
             {
                 execute(statement.get());
             }
@@ -606,10 +846,15 @@ void Interpreter::execute(const Stmt* stmt)
     }
 
     // Standalone expression:
+    //
     // age = 25;
-    if (auto expressionStmt = dynamic_cast<const ExpressionStmt*>(stmt))
+    // name = "Orbit";
+    // letter = 'A';
+    if (auto expressionStmt =
+            dynamic_cast<const ExpressionStmt*>(stmt))
     {
-        evaluate(expressionStmt->expression.get());
+        evaluate(
+            expressionStmt->expression.get());
 
         return;
     }
@@ -628,8 +873,9 @@ void Interpreter::interpret(
     }
     catch (const RuntimeError& error)
     {
-        std::cerr << "Runtime Error: "
-                  << error.what()
-                  << std::endl;
+        std::cerr
+            << "Runtime Error: "
+            << error.what()
+            << std::endl;
     }
 }

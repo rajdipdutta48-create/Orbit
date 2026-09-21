@@ -36,8 +36,23 @@ private:
 
     void number();
 
+    // Reads a string enclosed by double quotes.
+    //
+    // Example:
+    // "Orbit"
     void stringLiteral();
 
+    // Reads a single character enclosed by single quotes.
+    //
+    // Example:
+    // 'A'
+    void charLiteral();
+
+    // Reads:
+    //
+    // comet: anything burn
+    //
+    // and ignores everything between comet: and burn.
     void skipComment();
 
     void scanToken();

@@ -1,0 +1,1070 @@
+/* =========================================================
+   ORBIT IDE
+   Space-themed interface
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: #e8f0ff;
+  background: #030712;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* =========================================================
+   MAIN APPLICATION
+   ========================================================= */
+
+.orbit-app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 15% 20%,
+      rgba(70, 100, 255, 0.16),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      rgba(130, 70, 255, 0.13),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(30, 80, 150, 0.08),
+      transparent 45%
+    ),
+    #030712;
+}
+
+/* Star field */
+
+.orbit-app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle, rgba(150, 190, 255, 0.45) 1px, transparent 1px);
+
+  background-size:
+    90px 90px,
+    150px 150px;
+
+  background-position:
+    20px 30px,
+    70px 100px;
+
+  opacity: 0.25;
+}
+
+/* Large orbital glow */
+
+.orbit-app::after {
+  content: "";
+  position: absolute;
+
+  width: 700px;
+  height: 700px;
+
+  top: -400px;
+  right: -250px;
+
+  border: 1px solid rgba(100, 150, 255, 0.12);
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 80px rgba(80, 120, 255, 0.08),
+    inset 0 0 80px rgba(80, 120, 255, 0.05);
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+
+.topbar {
+  position: relative;
+  z-index: 10;
+
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 28px;
+
+  border-bottom: 1px solid rgba(130, 160, 220, 0.14);
+
+  background: rgba(5, 10, 25, 0.78);
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.orbit-symbol {
+  width: 39px;
+  height: 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(120, 170, 255, 0.55);
+  border-radius: 50%;
+
+  color: #9fc5ff;
+
+  font-size: 18px;
+
+  box-shadow:
+    0 0 15px rgba(90, 140, 255, 0.35),
+    inset 0 0 12px rgba(90, 140, 255, 0.1);
+
+  position: relative;
+}
+
+.orbit-symbol::after {
+  content: "";
+
+  position: absolute;
+
+  width: 48px;
+  height: 18px;
+
+  border: 1px solid rgba(130, 170, 255, 0.4);
+  border-radius: 50%;
+
+  transform: rotate(-25deg);
+}
+
+.brand h1 {
+  margin: 0;
+
+  font-size: 18px;
+  letter-spacing: 5px;
+  font-weight: 700;
+
+  color: #f1f6ff;
+}
+
+.brand span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #71809d;
+
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   TOP ACTIONS
+   ========================================================= */
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-button,
+.run-button {
+  height: 38px;
+
+  padding: 0 17px;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-button {
+  color: #a9b8d2;
+
+  background: rgba(20, 30, 55, 0.55);
+
+  border: 1px solid rgba(130, 160, 210, 0.15);
+}
+
+.nav-button:hover {
+  color: #e7efff;
+
+  background: rgba(35, 50, 85, 0.7);
+
+  border-color: rgba(130, 170, 255, 0.35);
+}
+
+.run-button {
+  color: #07101e;
+
+  background: #9fc5ff;
+
+  border: 1px solid #b8d4ff;
+
+  box-shadow:
+    0 0 18px rgba(100, 160, 255, 0.28);
+}
+
+.run-button:hover {
+  background: #c1dcff;
+
+  box-shadow:
+    0 0 25px rgba(100, 160, 255, 0.45);
+
+  transform: translateY(-1px);
+}
+
+.run-button:active {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   IDE
+   ========================================================= */
+
+.ide {
+  position: relative;
+  z-index: 2;
+
+  height: calc(100vh - 112px);
+
+  display: grid;
+
+  grid-template-columns: minmax(0, 1fr) 350px;
+  grid-template-rows: minmax(0, 1fr) 230px;
+
+  gap: 1px;
+
+  padding: 18px 20px 14px;
+}
+
+/* =========================================================
+   PANELS
+   ========================================================= */
+
+.editor-panel,
+.docs-panel,
+.output-panel {
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(14, 22, 43, 0.92),
+      rgba(6, 12, 27, 0.94)
+    );
+
+  border: 1px solid rgba(120, 150, 210, 0.13);
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.025);
+}
+
+/* Editor */
+
+.editor-panel {
+  grid-column: 1;
+  grid-row: 1;
+
+  border-radius: 12px 0 0 0;
+}
+
+/* Documentation */
+
+.docs-panel {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+
+  border-radius: 0 12px 12px 0;
+
+  animation: docs-enter 0.25s ease;
+}
+
+/* Output */
+
+.output-panel {
+  grid-column: 1;
+  grid-row: 2;
+
+  border-radius: 0 0 0 12px;
+}
+
+@keyframes docs-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
+
+.panel-header {
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 15px;
+
+  border-bottom: 1px solid rgba(120, 150, 210, 0.1);
+
+  background: rgba(12, 20, 39, 0.72);
+
+  color: #8798b7;
+
+  font-size: 11px;
+  letter-spacing: 0.7px;
+}
+
+/* =========================================================
+   FILE TAB
+   ========================================================= */
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  color: #c7d5ed;
+}
+
+.file-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #8db9ff;
+
+  box-shadow:
+    0 0 8px rgba(100, 160, 255, 0.8);
+}
+
+.language-status {
+  padding: 5px 9px;
+
+  border: 1px solid rgba(130, 170, 240, 0.13);
+  border-radius: 5px;
+
+  color: #687b9b;
+
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   CODE EDITOR
+   ========================================================= */
+
+.code-editor {
+  width: 100%;
+  height: calc(100% - 46px);
+
+  display: block;
+
+  padding: 24px 25px;
+
+  resize: none;
+  outline: none;
+  border: none;
+
+  background: transparent;
+
+  color: #dce8ff;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 14px;
+  line-height: 1.8;
+
+  caret-color: #a7cbff;
+
+  tab-size: 4;
+}
+
+.code-editor::selection {
+  background: rgba(100, 150, 255, 0.25);
+}
+
+.code-editor:focus {
+  box-shadow:
+    inset 0 0 30px rgba(60, 100, 180, 0.035);
+}
+
+/* =========================================================
+   DOCUMENTATION
+   ========================================================= */
+
+.docs-content {
+  height: calc(100% - 46px);
+
+  overflow-y: auto;
+
+  padding: 22px 20px 30px;
+}
+
+.docs-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.docs-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-content::-webkit-scrollbar-thumb {
+  background: rgba(120, 150, 210, 0.2);
+  border-radius: 10px;
+}
+
+.docs-content h2 {
+  margin: 0 0 12px;
+
+  color: #dce8ff;
+
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.docs-content h3 {
+  margin: 26px 0 9px;
+
+  color: #9fc5ff;
+
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.docs-content p {
+  margin: 0;
+
+  color: #7788a6;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.docs-content code {
+  color: #a9caff;
+}
+
+.docs-content pre {
+  margin: 10px 0 0;
+
+  padding: 12px;
+
+  overflow-x: auto;
+
+  background: rgba(2, 7, 18, 0.75);
+
+  border: 1px solid rgba(120, 150, 210, 0.1);
+  border-radius: 7px;
+
+  color: #bcd4fa;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+/* Close button */
+
+.close-button {
+  width: 25px;
+  height: 25px;
+
+  border: none;
+  border-radius: 5px;
+
+  background: transparent;
+
+  color: #667896;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #d8e4f8;
+}
+
+/* =========================================================
+   OUTPUT
+   ========================================================= */
+
+.status {
+  color: #81a9dc;
+
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+
+.output {
+  height: calc(100% - 46px);
+
+  margin: 0;
+
+  padding: 17px 20px;
+
+  overflow: auto;
+
+  color: #9eb5d8;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 12px;
+  line-height: 1.7;
+
+  white-space: pre-wrap;
+}
+
+/* =========================================================
+   STATUS BAR
+   ========================================================= */
+
+.statusbar {
+  position: relative;
+  z-index: 10;
+
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 25px;
+
+  border-top: 1px solid rgba(120, 150, 210, 0.12);
+
+  background: rgba(4, 9, 20, 0.85);
+
+  color: #536580;
+
+  font-size: 9px;
+
+  letter-spacing: 1px;
+
+  text-transform: uppercase;
+}
+
+.statusbar span:first-child {
+  color: #7796c2;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
+
+@media (max-width: 950px) {
+  body {
+    overflow: auto;
+  }
+
+  .orbit-app {
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .ide {
+    height: auto;
+    min-height: calc(100vh - 112px);
+
+    grid-template-columns: 1fr;
+    grid-template-rows: 500px 250px auto;
+
+    padding: 12px;
+  }
+
+  .editor-panel {
+    grid-column: 1;
+    grid-row: 1;
+
+    border-radius: 10px 10px 0 0;
+  }
+
+  .output-panel {
+    grid-column: 1;
+    grid-row: 2;
+
+    border-radius: 0 0 10px 10px;
+  }
+
+  .docs-panel {
+    grid-column: 1;
+    grid-row: 3;
+
+    min-height: 500px;
+
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    height: 64px;
+    padding: 0 14px;
+  }
+
+  .brand span {
+    display: none;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .orbit-symbol {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-button {
+    display: none;
+  }
+
+  .run-button {
+    padding: 0 13px;
+  }
+
+  .ide {
+    grid-template-rows: 450px 220px auto;
+  }
+
+  .code-editor {
+    padding: 18px;
+
+    font-size: 13px;
+  }
+
+  .statusbar {
+    padding: 0 14px;
+  }
+
+  .statusbar span:nth-child(2) {
+    display: none;
+  }
+}
+
+/* =========================================================
+   LAYOUT FIX
+   ========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.orbit-app {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Keep header controls visible */
+.topbar {
+  width: 100%;
+  min-width: 0;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.top-actions {
+  flex-shrink: 0;
+}
+
+/* Main IDE should never create horizontal overflow */
+.ide {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: minmax(0, 1fr) 170px;
+  gap: 12px;
+
+  position: relative;
+}
+
+/* Editor uses the complete available width */
+.editor-panel {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.output-panel {
+  grid-column: 1;
+  grid-row: 2;
+  width: calc(65% - 6px);
+}
+
+.input-panel {
+  grid-column: 1;
+  grid-row: 2;
+  width: calc(35% - 6px);
+  justify-self: end;
+}
+
+/* Documentation becomes an overlay */
+.docs-panel {
+  position: absolute;
+
+  z-index: 50;
+
+  top: 18px;
+  right: 20px;
+  bottom: 18px;
+
+  width: min(380px, calc(100% - 40px));
+
+  grid-column: unset;
+  grid-row: unset;
+
+  border-radius: 12px;
+
+  box-shadow:
+    -20px 0 60px rgba(0, 0, 0, 0.45),
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px rgba(255, 255, 255, 0.03);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .topbar {
+    padding: 0 14px;
+  }
+
+  .top-actions {
+    gap: 6px;
+  }
+
+  .run-button {
+    padding: 0 12px;
+  }
+
+.ide {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 170px;
+
+  gap: 12px;
+  position: relative;
+}
+
+  .docs-panel {
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+
+    width: calc(100% - 24px);
+  }
+
+  .statusbar {
+    padding: 0 14px;
+  }
+}
+
+/* =========================================================
+   ORBIT CODE EDITOR
+   ========================================================= */
+
+.editor-container {
+  position: relative;
+
+  height: calc(100% - 46px);
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 70% 20%,
+      rgba(60, 100, 180, 0.045),
+      transparent 35%
+    ),
+    rgba(3, 8, 19, 0.55);
+}
+
+/* Line numbers */
+
+.line-numbers {
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 58px;
+  height: 100%;
+
+  padding-top: 24px;
+
+  overflow: hidden;
+
+  background: rgba(5, 11, 25, 0.55);
+
+  border-right: 1px solid rgba(120, 150, 210, 0.08);
+
+  color: #3f506d;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 13px;
+
+  line-height: 1.8;
+
+  text-align: right;
+  padding-right: 15px;
+
+  user-select: none;
+
+  z-index: 3;
+}
+
+.line-numbers div {
+  height: 25px;
+}
+
+/* Syntax highlighted layer */
+
+.highlight-layer {
+  display: none;
+  position: absolute;
+
+  top: 0;
+  left: 58px;
+ 
+  width: calc(100% - 58px);
+  height: 100%;
+
+  margin: 0;
+
+  padding: 24px 25px;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  white-space: pre;
+
+  color: #dce8ff;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 14px;
+
+  line-height: 1.8;
+
+  tab-size: 4;
+
+  z-index: 1;
+}
+
+/* Actual textarea */
+
+.code-editor {
+  position: absolute;
+
+  top: 0;
+  left: 58px;
+
+  width: calc(100% - 58px);
+  height: 100%;
+
+  margin: 0;
+  padding: 24px 25px;
+
+  resize: none;
+  outline: none;
+  border: none;
+
+  background: transparent;
+
+  color: #dce8ff;
+  caret-color: #a7cbff;
+
+  font-family:
+    "JetBrains Mono",
+    "Fira Code",
+    Consolas,
+    monospace;
+
+  font-size: 14px;
+  font-weight: 400;
+
+  line-height: 1.8;
+
+  tab-size: 4;
+
+  white-space: pre;
+
+  overflow: auto;
+
+  z-index: 2;
+}
+
+/* Program input panel */
+.input-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.program-input {
+  flex: 1;
+  width: 100%;
+  min-height: 90px;
+  resize: none;
+
+  background: rgba(5, 10, 24, 0.8);
+  border: none;
+  outline: none;
+
+  color: #e8f1ff;
+  font-family: "Fira Code", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.program-input::placeholder {
+  color: rgba(180, 200, 230, 0.45);
+}
+
+.program-input:focus {
+  box-shadow: inset 0 0 0 1px rgba(120, 170, 255, 0.25);
+}
+
+.input-panel {
+  height: 150px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.program-input {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  resize: none;
+  box-sizing: border-box;
+
+  background: rgba(8, 25, 40, 0.95);
+  border: none;
+  outline: none;
+
+  color: #dff6ff;
+
+  font-family: "Fira Code", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+
+  padding: 12px 14px;
+}
+
+.program-input::placeholder {
+  color: rgba(130, 210, 235, 0.55);
+}
+
+.program-input:focus {
+  box-shadow: inset 0 0 0 1px rgba(80, 200, 255, 0.35);
+}

@@ -21,6 +21,7 @@ enum class TokenType
     IDENTIFIER,
     NUMBER,
     STRING,
+    CHAR,
 
     // Operators
     PLUS,

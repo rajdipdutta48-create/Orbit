@@ -64,6 +64,8 @@ std::unique_ptr<Expr> Parser::primary()
 
   Currently supports:
   - Number literals
+  - String literals
+  - Character literals
   - Boolean literals
   - Parenthesized expressions
   - Variables / identifiers
@@ -72,6 +74,18 @@ std::unique_ptr<Expr> Parser::primary()
 {
     // Example: 123
     if (match(TokenType::NUMBER))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    // Example: "Orbit"
+    if (match(TokenType::STRING))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    // Example: 'O'
+    if (match(TokenType::CHAR))
     {
         return std::make_unique<Literal>(previous());
     }
@@ -90,6 +104,8 @@ std::unique_ptr<Expr> Parser::primary()
 
     // Example:
     // [10, 20, 30]
+    // ["Earth", "Mars"]
+    // ['A', 'B', 'C']
     if (match(TokenType::LEFT_BRACKET))
     {
         std::vector<std::unique_ptr<Expr>> elements;
@@ -119,7 +135,8 @@ std::unique_ptr<Expr> Parser::primary()
 
         match(TokenType::RIGHT_PAREN);
 
-        return std::make_unique<Grouping>(std::move(expr));
+        return std::make_unique<Grouping>(
+            std::move(expr));
     }
 
     // Example: age
@@ -211,7 +228,8 @@ std::unique_ptr<Expr> Parser::factor()
 {
     auto left = unary();
 
-    while (match(TokenType::STAR) || match(TokenType::SLASH))
+    while (match(TokenType::STAR) ||
+           match(TokenType::SLASH))
     {
         Token op = previous();
 
@@ -245,7 +263,8 @@ std::unique_ptr<Expr> Parser::term()
 {
     auto left = factor();
 
-    while (match(TokenType::PLUS) || match(TokenType::MINUS))
+    while (match(TokenType::PLUS) ||
+           match(TokenType::MINUS))
     {
         Token op = previous();
 
@@ -402,7 +421,8 @@ std::unique_ptr<Expr> Parser::assignment()
         auto value = assignment();
 
         // Assignment to a normal variable.
-        if (auto variable = dynamic_cast<Variable *>(left.get()))
+        if (auto variable =
+                dynamic_cast<Variable *>(left.get()))
         {
             return std::make_unique<Assignment>(
                 variable->name,
@@ -413,7 +433,8 @@ std::unique_ptr<Expr> Parser::assignment()
         //
         // Example:
         // numbers[1] = 99;
-        if (auto indexExpr = dynamic_cast<IndexExpr *>(left.get()))
+        if (auto indexExpr =
+                dynamic_cast<IndexExpr *>(left.get()))
         {
             auto object = std::move(indexExpr->object);
             auto index = std::move(indexExpr->index);
@@ -424,9 +445,10 @@ std::unique_ptr<Expr> Parser::assignment()
                 std::move(value));
         }
 
-        std::cerr << "Parser Error: Invalid assignment target at line "
-                  << equals.line
-                  << std::endl;
+        std::cerr
+            << "Parser Error: Invalid assignment target at line "
+            << equals.line
+            << std::endl;
     }
 
     return left;
@@ -749,11 +771,12 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse()
         // Otherwise the parser would loop forever.
         if (current == start)
         {
-            std::cerr << "Parser Error: Unexpected token '"
-                      << peek().lexeme
-                      << "' at line "
-                      << peek().line
-                      << std::endl;
+            std::cerr
+                << "Parser Error: Unexpected token '"
+                << peek().lexeme
+                << "' at line "
+                << peek().line
+                << std::endl;
 
             advance();
         }

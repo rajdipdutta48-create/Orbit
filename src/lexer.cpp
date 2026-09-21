@@ -136,7 +136,6 @@ void Lexer::scanToken()
         break;
 
     case '>':
-
         if (peek() == '=')
         {
             advance();
@@ -153,7 +152,6 @@ void Lexer::scanToken()
         break;
 
     case '!':
-
         if (peek() == '=')
         {
             advance();
@@ -170,7 +168,6 @@ void Lexer::scanToken()
         break;
 
     case '&':
-
         if (peek() == '&')
         {
             advance();
@@ -189,7 +186,6 @@ void Lexer::scanToken()
         break;
 
     case '|':
-
         if (peek() == '|')
         {
             advance();
@@ -260,6 +256,10 @@ void Lexer::scanToken()
         stringLiteral();
         break;
 
+    case '\'':
+        charLiteral();
+        break;
+
     default:
 
         if (isAlpha(c))
@@ -276,7 +276,7 @@ void Lexer::scanToken()
 
         else
         {
-            std::cout
+            std::cerr
                 << "Lexer Error: Unexpected character '"
                 << c
                 << "' at line "
@@ -340,13 +340,78 @@ void Lexer::stringLiteral()
 
     if (isAtEnd())
     {
+        std::cerr
+            << "Lexer Error: Unterminated string at line "
+            << line
+            << std::endl;
+
         return;
     }
 
+    // Consume closing double quote.
     advance();
 
     tokens.push_back(
         Token(TokenType::STRING, value, line));
+}
+
+void Lexer::charLiteral()
+{
+    // A character literal must contain exactly
+    // one character between single quotes.
+    //
+    // Example:
+    // 'A'
+    //
+    // The quotes themselves are not stored in
+    // the token lexeme.
+
+    if (isAtEnd() || peek() == '\n')
+    {
+        std::cerr
+            << "Lexer Error: Unterminated character at line "
+            << line
+            << std::endl;
+
+        return;
+    }
+
+    char value = advance();
+
+    // A character literal must contain exactly
+    // one character.
+    if (peek() != '\'')
+    {
+        std::cerr
+            << "Lexer Error: Character literal must contain exactly one character at line "
+            << line
+            << std::endl;
+
+        // Skip the remaining invalid character literal.
+        while (!isAtEnd() &&
+               peek() != '\'' &&
+               peek() != '\n')
+        {
+            advance();
+        }
+
+        // Consume the closing quote if one exists.
+        if (!isAtEnd() && peek() == '\'')
+        {
+            advance();
+        }
+
+        return;
+    }
+
+    // Consume closing single quote.
+    advance();
+
+    tokens.push_back(
+        Token(
+            TokenType::CHAR,
+            std::string(1, value),
+            line));
 }
 
 void Lexer::skipComment()
@@ -355,7 +420,9 @@ void Lexer::skipComment()
     {
         // Skip spaces and other whitespace before the next word.
         while (!isAtEnd() &&
-               (peek() == ' ' || peek() == '\t' || peek() == '\r'))
+               (peek() == ' ' ||
+                peek() == '\t' ||
+                peek() == '\r'))
         {
             advance();
         }
@@ -384,9 +451,10 @@ void Lexer::skipComment()
         // report an unterminated comment.
         if (!isAtEnd() && peek() == '\n')
         {
-            std::cerr << "Lexer Error: Unterminated comment at line "
-                      << line
-                      << std::endl;
+            std::cerr
+                << "Lexer Error: Unterminated comment at line "
+                << line
+                << std::endl;
 
             advance();
             line++;
@@ -396,7 +464,8 @@ void Lexer::skipComment()
     }
 
     // Reached the end of the source without finding "burn".
-    std::cerr << "Lexer Error: Unterminated comment at line "
-              << line
-              << std::endl;
+    std::cerr
+        << "Lexer Error: Unterminated comment at line "
+        << line
+        << std::endl;
 }

@@ -12,6 +12,8 @@ Lexer::Lexer(const std::string &source)
     keywords["dock"] = TokenType::DOCK;
     keywords["transmit"] = TokenType::TRANSMIT;
     keywords["receive"] = TokenType::RECEIVE;
+    keywords["true"] = TokenType::TRUE;
+    keywords["false"] = TokenType::FALSE;
 }
 
 bool Lexer::isAtEnd() // tells us if the current has reached the end or not.
@@ -47,6 +49,7 @@ void Lexer::identifier() // Reads a complete identifier or keyword and creates t
     {
         word += advance();
     }
+
     if (word == "comet" && peek() == ':') // skip
     {
         advance();
@@ -55,6 +58,7 @@ void Lexer::identifier() // Reads a complete identifier or keyword and creates t
 
         return;
     }
+
     if (keywords.find(word) != keywords.end())
     {
         tokens.push_back(
@@ -107,6 +111,7 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
             tokens.push_back(
                 Token(TokenType::EQUAL, "=", line));
         }
+
         break;
 
     case '<':
@@ -142,6 +147,7 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
         }
 
         break;
+
     case '!':
 
         if (peek() == '=')
@@ -151,8 +157,52 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
             tokens.push_back(
                 Token(TokenType::NOT_EQUAL, "!=", line));
         }
+        else
+        {
+            tokens.push_back(
+                Token(TokenType::BANG, "!", line));
+        }
 
         break;
+
+    case '&':
+
+        if (peek() == '&')
+        {
+            advance();
+
+            tokens.push_back(
+                Token(TokenType::AND, "&&", line));
+        }
+        else
+        {
+            std::cerr
+                << "Lexer Error: Expected '&' after '&' at line "
+                << line
+                << std::endl;
+        }
+
+        break;
+
+    case '|':
+
+        if (peek() == '|')
+        {
+            advance();
+
+            tokens.push_back(
+                Token(TokenType::OR, "||", line));
+        }
+        else
+        {
+            std::cerr
+                << "Lexer Error: Expected '|' after '|' at line "
+                << line
+                << std::endl;
+        }
+
+        break;
+
     case ';':
         tokens.push_back(
             Token(TokenType::SEMICOLON, ";", line));
@@ -194,6 +244,7 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
             current--;
             number();
         }
+
         else
         {
             std::cout
@@ -203,6 +254,7 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
                 << line
                 << std::endl;
         }
+
         break;
     }
 }
@@ -213,8 +265,10 @@ std::vector<Token> Lexer::scanTokens() // used to fill the tokens vector.
     {
         scanToken();
     }
+
     tokens.push_back( // this indicates the end of the code
         Token(TokenType::END_OF_FILE, "", line));
+
     return tokens;
 }
 
@@ -304,8 +358,10 @@ void Lexer::skipComment() // ignores comments inside code
             std::cerr << "Lexer Error: Unterminated comment at line "
                       << line
                       << std::endl;
+
             advance();
             line++;
+
             return;
         }
     }

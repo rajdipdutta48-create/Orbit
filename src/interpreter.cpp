@@ -3,10 +3,29 @@
 
 Value Interpreter::evaluate(const Expr* expr)
 {
-    // Evaluate a number literal.
+    // Evaluate a literal.
+    // Currently supports:
+    // - numbers
+    // - true
+    // - false
     if (auto literal = dynamic_cast<const Literal*>(expr))
     {
-        return std::stod(literal->value.lexeme);
+        if (literal->value.type == TokenType::NUMBER)
+        {
+            return std::stod(literal->value.lexeme);
+        }
+
+        if (literal->value.type == TokenType::TRUE)
+        {
+            return true;
+        }
+
+        if (literal->value.type == TokenType::FALSE)
+        {
+            return false;
+        }
+
+        throw RuntimeError("Unknown literal");
     }
 
     // Evaluate a variable.
@@ -50,16 +69,35 @@ Value Interpreter::evaluate(const Expr* expr)
     }
 
     // Evaluate a unary expression.
-    // Example:
+    // Examples:
     // -10
     // -age
+    // !true
+    // !false
     if (auto unary = dynamic_cast<const Unary*>(expr))
     {
         Value right = evaluate(unary->right.get());
 
         if (unary->op.type == TokenType::MINUS)
         {
+            if (!std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operand of '-' must be a number");
+            }
+
             return -std::get<double>(right);
+        }
+
+        if (unary->op.type == TokenType::BANG)
+        {
+            if (!std::holds_alternative<bool>(right))
+            {
+                throw RuntimeError(
+                    "Operand of '!' must be a boolean");
+            }
+
+            return !std::get<bool>(right);
         }
 
         throw RuntimeError("Unknown unary operator");
@@ -75,40 +113,112 @@ Value Interpreter::evaluate(const Expr* expr)
         switch (binary->op.type)
         {
         case TokenType::PLUS:
-            return std::get<double>(left) + std::get<double>(right);
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '+' must be numbers");
+            }
+
+            return std::get<double>(left) +
+                   std::get<double>(right);
 
         case TokenType::MINUS:
-            return std::get<double>(left) - std::get<double>(right);
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '-' must be numbers");
+            }
+
+            return std::get<double>(left) -
+                   std::get<double>(right);
 
         case TokenType::STAR:
-            return std::get<double>(left) * std::get<double>(right);
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '*' must be numbers");
+            }
+
+            return std::get<double>(left) *
+                   std::get<double>(right);
 
         case TokenType::SLASH:
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '/' must be numbers");
+            }
+
             if (std::get<double>(right) == 0)
             {
                 throw RuntimeError("Division by zero");
             }
 
-            return std::get<double>(left) / std::get<double>(right);
+            return std::get<double>(left) /
+                   std::get<double>(right);
 
         // Comparison operators produce boolean values.
         case TokenType::LESS:
-            return std::get<double>(left) < std::get<double>(right);
-
         case TokenType::LESS_EQUAL:
-            return std::get<double>(left) <= std::get<double>(right);
-
         case TokenType::GREATER:
-            return std::get<double>(left) > std::get<double>(right);
-
         case TokenType::GREATER_EQUAL:
-            return std::get<double>(left) >= std::get<double>(right);
+        {
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Comparison operands must be numbers");
+            }
 
+            double leftValue = std::get<double>(left);
+            double rightValue = std::get<double>(right);
+
+            if (binary->op.type == TokenType::LESS)
+                return leftValue < rightValue;
+
+            if (binary->op.type == TokenType::LESS_EQUAL)
+                return leftValue <= rightValue;
+
+            if (binary->op.type == TokenType::GREATER)
+                return leftValue > rightValue;
+
+            return leftValue >= rightValue;
+        }
+
+        // Equality works with both numbers and booleans.
         case TokenType::EQUAL_EQUAL:
             return left == right;
 
         case TokenType::NOT_EQUAL:
             return left != right;
+
+        // Logical AND.
+        case TokenType::AND:
+            if (!std::holds_alternative<bool>(left) ||
+                !std::holds_alternative<bool>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '&&' must be booleans");
+            }
+
+            return std::get<bool>(left) &&
+                   std::get<bool>(right);
+
+        // Logical OR.
+        case TokenType::OR:
+            if (!std::holds_alternative<bool>(left) ||
+                !std::holds_alternative<bool>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '||' must be booleans");
+            }
+
+            return std::get<bool>(left) ||
+                   std::get<bool>(right);
 
         default:
             throw RuntimeError("Unknown binary operator");

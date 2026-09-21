@@ -64,12 +64,25 @@ std::unique_ptr<Expr> Parser::primary()
 
   Currently supports:
   - Number literals
+  - Boolean literals
   - Parenthesized expressions
   - Variables / identifiers
 */
 {
     // Example: 123
     if (match(TokenType::NUMBER))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    // Example: true
+    if (match(TokenType::TRUE))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    // Example: false
+    if (match(TokenType::FALSE))
     {
         return std::make_unique<Literal>(previous());
     }
@@ -102,12 +115,15 @@ std::unique_ptr<Expr> Parser::unary()
       -10
       -age
       -(10 + 5)
+      !true
+      !age
 
   Unary operators have higher precedence than
   multiplication, division, addition and subtraction.
 */
 {
-    if (match(TokenType::MINUS))
+    if (match(TokenType::MINUS) ||
+        match(TokenType::BANG))
     {
         Token op = previous();
 
@@ -245,6 +261,62 @@ std::unique_ptr<Expr> Parser::equality()
     return left;
 }
 
+std::unique_ptr<Expr> Parser::logicalAnd()
+/*
+  Parses logical AND expressions.
+
+  Example:
+
+      true && false
+
+  AND has higher precedence than OR.
+*/
+{
+    auto left = equality();
+
+    while (match(TokenType::AND))
+    {
+        Token op = previous();
+
+        auto right = equality();
+
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::logicalOr()
+/*
+  Parses logical OR expressions.
+
+  Example:
+
+      true || false
+
+  OR has lower precedence than AND.
+*/
+{
+    auto left = logicalAnd();
+
+    while (match(TokenType::OR))
+    {
+        Token op = previous();
+
+        auto right = logicalAnd();
+
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
+
+    return left;
+}
+
 std::unique_ptr<Expr> Parser::assignment()
 /*
   Parses assignment expressions.
@@ -254,12 +326,12 @@ std::unique_ptr<Expr> Parser::assignment()
       age = 25;
 
   Assignment has lower precedence than
-  equality and comparison.
+  logical, equality and comparison expressions.
 
   The left side must be a variable.
 */
 {
-    auto left = equality();
+    auto left = logicalOr();
 
     if (match(TokenType::EQUAL))
     {
@@ -291,6 +363,10 @@ std::unique_ptr<Expr> Parser::expression()
   The precedence chain is:
 
       assignment
+          ↓
+      logicalOr
+          ↓
+      logicalAnd
           ↓
       equality
           ↓

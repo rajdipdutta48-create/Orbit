@@ -29,6 +29,8 @@ private:
     std::unique_ptr<Expr> term();
     std::unique_ptr<Expr> comparison();
     std::unique_ptr<Expr> equality();
+    std::unique_ptr<Expr> logicalAnd();
+    std::unique_ptr<Expr> logicalOr();
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> expression();
 

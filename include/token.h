@@ -10,6 +10,8 @@ enum class TokenType
     DOCK,
     TRANSMIT,
     RECEIVE,
+    TRUE,
+    FALSE,
 
     // Identifiers and literals
     IDENTIFIER,
@@ -28,6 +30,9 @@ enum class TokenType
     LESS_EQUAL,
     GREATER,
     GREATER_EQUAL,
+    BANG,
+    AND,
+    OR,
 
     // Symbols
     LEFT_PAREN,

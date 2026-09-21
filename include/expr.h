@@ -59,6 +59,18 @@ public:
     Variable(const Token& name);
 };
 
+// Represents:
+// age = 25;
+class Assignment : public Expr
+{
+public:
+    Token name;
+    std::unique_ptr<Expr> value;
+
+    Assignment(const Token& name,
+               std::unique_ptr<Expr> value);
+};
+
 // Base class for all Orbit statements.
 class Stmt
 {

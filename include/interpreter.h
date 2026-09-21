@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <variant>
+#include <stdexcept>
 
 #include "expr.h"
 
@@ -18,6 +19,16 @@
 //
 // More types such as string can be added later.
 using Value = std::variant<double, bool>;
+
+// Represents an error that occurs while executing Orbit code.
+class RuntimeError : public std::runtime_error
+{
+public:
+    RuntimeError(const std::string& message)
+        : std::runtime_error(message)
+    {
+    }
+};
 
 class Interpreter
 {

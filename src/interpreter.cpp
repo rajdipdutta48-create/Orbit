@@ -12,7 +12,41 @@ Value Interpreter::evaluate(const Expr* expr)
     // Evaluate a variable.
     if (auto variable = dynamic_cast<const Variable*>(expr))
     {
-        return environment[variable->name.lexeme];
+        auto it = environment.find(variable->name.lexeme);
+
+        // Variable does not exist.
+        if (it == environment.end())
+        {
+            throw RuntimeError(
+                "Undefined variable '" +
+                variable->name.lexeme +
+                "'");
+        }
+
+        return it->second;
+    }
+
+    // Evaluate an assignment.
+    // Example:
+    // age = 25;
+    if (auto assignment = dynamic_cast<const Assignment*>(expr))
+    {
+        // Assignment is only valid for an existing variable.
+        auto it = environment.find(assignment->name.lexeme);
+
+        if (it == environment.end())
+        {
+            throw RuntimeError(
+                "Undefined variable '" +
+                assignment->name.lexeme +
+                "'");
+        }
+
+        Value value = evaluate(assignment->value.get());
+
+        it->second = value;
+
+        return value;
     }
 
     // Evaluate a unary expression.
@@ -28,7 +62,7 @@ Value Interpreter::evaluate(const Expr* expr)
             return -std::get<double>(right);
         }
 
-        return 0.0;
+        throw RuntimeError("Unknown unary operator");
     }
 
     // Evaluate a binary expression recursively.
@@ -50,6 +84,11 @@ Value Interpreter::evaluate(const Expr* expr)
             return std::get<double>(left) * std::get<double>(right);
 
         case TokenType::SLASH:
+            if (std::get<double>(right) == 0)
+            {
+                throw RuntimeError("Division by zero");
+            }
+
             return std::get<double>(left) / std::get<double>(right);
 
         // Comparison operators produce boolean values.
@@ -72,7 +111,7 @@ Value Interpreter::evaluate(const Expr* expr)
             return left != right;
 
         default:
-            return 0.0;
+            throw RuntimeError("Unknown binary operator");
         }
     }
 
@@ -82,7 +121,7 @@ Value Interpreter::evaluate(const Expr* expr)
         return evaluate(grouping->expression.get());
     }
 
-    return 0.0;
+    throw RuntimeError("Unknown expression");
 }
 
 void Interpreter::printValue(const Value& value)
@@ -142,7 +181,7 @@ void Interpreter::execute(const Stmt* stmt)
     }
 
     // Standalone expression:
-    // 20 + 30;
+    // age = 25;
     if (auto expressionStmt = dynamic_cast<const ExpressionStmt*>(stmt))
     {
         evaluate(expressionStmt->expression.get());
@@ -154,9 +193,18 @@ void Interpreter::execute(const Stmt* stmt)
 void Interpreter::interpret(
     const std::vector<std::unique_ptr<Stmt>>& statements)
 {
-    // Execute every statement in the Orbit program in order.
-    for (const auto& statement : statements)
+    try
     {
-        execute(statement.get());
+        // Execute every statement in the Orbit program in order.
+        for (const auto& statement : statements)
+        {
+            execute(statement.get());
+        }
+    }
+    catch (const RuntimeError& error)
+    {
+        std::cerr << "Runtime Error: "
+                  << error.what()
+                  << std::endl;
     }
 }

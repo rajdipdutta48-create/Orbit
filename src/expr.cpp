@@ -31,6 +31,13 @@ Variable::Variable(const Token& name)
 {
 }
 
+Assignment::Assignment(const Token& name,
+                       std::unique_ptr<Expr> value)
+    : name(name),
+      value(std::move(value))
+{
+}
+
 VarStmt::VarStmt(const Token& name,
                  std::unique_ptr<Expr> initializer)
     : name(name),

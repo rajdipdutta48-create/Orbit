@@ -6,13 +6,13 @@
 
 int main()
 {
-    std::string source = R"(
+  std::string source = R"(
 
-dock x = 5;
+dock x = 10;
 
-dock y = 5;
+x = y;
 
-transmit(x <= y);
+transmit(x);
 
 )";
 

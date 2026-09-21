@@ -195,17 +195,6 @@ std::unique_ptr<Expr> Parser::comparison()
       <=
       >
       >=
-
-  Comparison has lower precedence than
-  arithmetic expressions.
-
-  Example:
-
-      10 + 5 > 12
-
-  becomes:
-
-      (10 + 5) > 12
 */
 {
     auto left = term();
@@ -236,16 +225,6 @@ std::unique_ptr<Expr> Parser::equality()
 
       ==
       !=
-
-  Equality has lower precedence than
-  comparison expressions.
-
-  Example:
-
-      age > 18 == true
-
-  will eventually be represented by
-  nested Binary expressions.
 */
 {
     auto left = comparison();
@@ -266,12 +245,53 @@ std::unique_ptr<Expr> Parser::equality()
     return left;
 }
 
+std::unique_ptr<Expr> Parser::assignment()
+/*
+  Parses assignment expressions.
+
+  Example:
+
+      age = 25;
+
+  Assignment has lower precedence than
+  equality and comparison.
+
+  The left side must be a variable.
+*/
+{
+    auto left = equality();
+
+    if (match(TokenType::EQUAL))
+    {
+        Token equals = previous();
+
+        auto value = assignment();
+
+        // Assignment is only valid when the
+        // left side is a variable.
+        if (auto variable = dynamic_cast<Variable*>(left.get()))
+        {
+            return std::make_unique<Assignment>(
+                variable->name,
+                std::move(value));
+        }
+
+        std::cerr << "Parser Error: Invalid assignment target at line "
+                  << equals.line
+                  << std::endl;
+    }
+
+    return left;
+}
+
 std::unique_ptr<Expr> Parser::expression()
 /*
   Entry point for expressions.
 
   The precedence chain is:
 
+      assignment
+          ↓
       equality
           ↓
       comparison
@@ -285,7 +305,7 @@ std::unique_ptr<Expr> Parser::expression()
       primary
 */
 {
-    return equality();
+    return assignment();
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration()
@@ -361,10 +381,10 @@ std::unique_ptr<Stmt> Parser::expressionStatement()
 /*
   Parses a standalone expression:
 
-      20 + 30;
+      age = 25;
 
-  This is useful even when the expression
-  isn't assigned to a variable.
+  This is useful for assignments and
+  other expressions that are not declarations.
 */
 {
     auto value = expression();

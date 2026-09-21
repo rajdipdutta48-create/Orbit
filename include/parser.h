@@ -44,6 +44,7 @@ private:
 
     // Control flow
     std::unique_ptr<Stmt> whenStatement();
+    std::unique_ptr<Stmt> orbitingStatement();
 
     // Parses all statements inside { }
     std::vector<std::unique_ptr<Stmt>> block();

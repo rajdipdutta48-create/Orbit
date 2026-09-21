@@ -341,7 +341,7 @@ std::unique_ptr<Expr> Parser::assignment()
 
         // Assignment is only valid when the
         // left side is a variable.
-        if (auto variable = dynamic_cast<Variable*>(left.get()))
+        if (auto variable = dynamic_cast<Variable *>(left.get()))
         {
             return std::make_unique<Assignment>(
                 variable->name,
@@ -545,6 +545,38 @@ std::unique_ptr<Stmt> Parser::whenStatement()
         std::move(elseBranch));
 }
 
+std::unique_ptr<Stmt> Parser::orbitingStatement()
+/*
+  Parses:
+
+      orbiting (condition) {
+          statements
+      }
+
+  The condition is evaluated before every
+  iteration of the loop.
+*/
+{
+    // Consume '('
+    match(TokenType::LEFT_PAREN);
+
+    // Parse the loop condition.
+    auto condition = expression();
+
+    // Consume ')'
+    match(TokenType::RIGHT_PAREN);
+
+    // Consume '{'
+    match(TokenType::LEFT_BRACE);
+
+    // Parse the statements inside the loop.
+    auto body = block();
+
+    return std::make_unique<WhileStmt>(
+        std::move(condition),
+        std::move(body));
+}
+
 std::unique_ptr<Stmt> Parser::statement()
 /*
   Determines which type of statement
@@ -564,6 +596,11 @@ std::unique_ptr<Stmt> Parser::statement()
     if (match(TokenType::WHEN))
     {
         return whenStatement();
+    }
+
+    if (match(TokenType::ORBITING))
+    {
+        return orbitingStatement();
     }
 
     return expressionStatement();

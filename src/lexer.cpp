@@ -16,6 +16,7 @@ Lexer::Lexer(const std::string &source)
     keywords["false"] = TokenType::FALSE;
     keywords["when"] = TokenType::WHEN;
     keywords["else"] = TokenType::ELSE;
+    keywords["orbiting"] = TokenType::ORBITING;
 }
 
 bool Lexer::isAtEnd() // tells us if the current has reached the end or not.

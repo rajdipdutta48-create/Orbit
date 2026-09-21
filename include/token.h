@@ -14,6 +14,7 @@ enum class TokenType
     FALSE,
     WHEN,
     ELSE,
+    ORBITING,
 
     // Identifiers and literals
     IDENTIFIER,

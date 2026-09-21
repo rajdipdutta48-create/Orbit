@@ -69,3 +69,11 @@ IfStmt::IfStmt(
       elseBranch(std::move(elseBranch))
 {
 }
+
+WhileStmt::WhileStmt(
+    std::unique_ptr<Expr> condition,
+    std::vector<std::unique_ptr<Stmt>> body)
+    : condition(std::move(condition)),
+      body(std::move(body))
+{
+}

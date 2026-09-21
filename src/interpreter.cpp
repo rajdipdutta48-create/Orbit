@@ -328,6 +328,40 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
+    // While loop:
+    //
+    // orbiting (condition) {
+    //     statements
+    // }
+    if (auto whileStmt = dynamic_cast<const WhileStmt*>(stmt))
+    {
+        while (true)
+        {
+            Value condition = evaluate(whileStmt->condition.get());
+
+            // The condition of an orbiting statement must be boolean.
+            if (!std::holds_alternative<bool>(condition))
+            {
+                throw RuntimeError(
+                    "Condition of 'orbiting' must be a boolean");
+            }
+
+            // Stop when the condition becomes false.
+            if (!std::get<bool>(condition))
+            {
+                break;
+            }
+
+            // Execute every statement in the loop body.
+            for (const auto& statement : whileStmt->body)
+            {
+                execute(statement.get());
+            }
+        }
+
+        return;
+    }
+
     // Standalone expression:
     // age = 25;
     if (auto expressionStmt = dynamic_cast<const ExpressionStmt*>(stmt))

@@ -142,4 +142,20 @@ public:
         std::vector<std::unique_ptr<Stmt>> elseBranch);
 };
 
+// Represents:
+//
+// orbiting (condition) {
+//     statements
+// }
+class WhileStmt : public Stmt
+{
+public:
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> body;
+
+    WhileStmt(
+        std::unique_ptr<Expr> condition,
+        std::vector<std::unique_ptr<Stmt>> body);
+};
+
 #endif

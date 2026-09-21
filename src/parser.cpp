@@ -1,4 +1,5 @@
 #include "../include/parser.h"
+#include <iostream>
 
 Parser::Parser(const std::vector<Token> &tokens)
     : tokens(tokens), current(0)
@@ -232,8 +233,16 @@ std::unique_ptr<Stmt> Parser::inputStatement()
   that will receive user input.
 */
 {
+    // Consume '('
+    match(TokenType::LEFT_PAREN);
+
+    // Read the variable name.
     Token name = advance();
 
+    // Consume ')'
+    match(TokenType::RIGHT_PAREN);
+
+    // Consume ';'
     match(TokenType::SEMICOLON);
 
     return std::make_unique<InputStmt>(name);
@@ -294,16 +303,31 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse()
 /*
   Main entry point of the parser.
 
-  Unlike the old parser, this parser now processes
-  the entire Orbit program and produces a list of
-  statements instead of only one expression.
+  Processes the entire Orbit program statement by statement.
 */
 {
     std::vector<std::unique_ptr<Stmt>> statements;
 
     while (!isAtEnd())
     {
+        // Remember where this statement started.
+        int start = current;
+
         statements.push_back(declaration());
+
+        // Safety check:
+        // Every successful statement must consume at least one token.
+        // Otherwise the parser would loop forever.
+        if (current == start)
+        {
+            std::cerr << "Parser Error: Unexpected token '"
+                      << peek().lexeme
+                      << "' at line "
+                      << peek().line
+                      << std::endl;
+
+            advance();
+        }
     }
 
     return statements;

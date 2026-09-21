@@ -65,7 +65,23 @@ void Interpreter::execute(const Stmt* stmt)
     // transmit(age);
     if (auto print = dynamic_cast<const PrintStmt*>(stmt))
     {
-        std::cout << evaluate(print->expression.get()) << std::endl;
+        std::cout << evaluate(print->expression.get())
+                  << std::endl;
+
+        return;
+    }
+
+    // Input statement:
+    // receive(age);
+    if (auto input = dynamic_cast<const InputStmt*>(stmt))
+    {
+        double value;
+
+        std::cout << "Enter " << input->name.lexeme << ": ";
+
+        std::cin >> value;
+
+        environment[input->name.lexeme] = value;
 
         return;
     }
@@ -74,13 +90,10 @@ void Interpreter::execute(const Stmt* stmt)
     // 20 + 30;
     if (auto expressionStmt = dynamic_cast<const ExpressionStmt*>(stmt))
     {
-        std::cout << evaluate(expressionStmt->expression.get())
-                  << std::endl;
+        evaluate(expressionStmt->expression.get());
 
         return;
     }
-
-    // Input statement will be implemented next.
 }
 
 void Interpreter::interpret(

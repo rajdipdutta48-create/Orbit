@@ -10,9 +10,9 @@ int main()
 
 dock age = 20;
 
-transmit(age);
+receive(age);
 
-transmit(20 + 30 * 5);
+transmit(age);
 
 )";
 

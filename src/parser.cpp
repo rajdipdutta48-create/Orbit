@@ -98,10 +98,29 @@ std::unique_ptr<Expr> Parser::unary()
 /*
   Parses unary expressions.
 
-  Unary operators will be added later.
-  For now, it simply passes control to primary().
+  Currently supports:
+      -expression
+
+  Examples:
+      -10
+      -age
+      -(10 + 5)
+
+  Unary operators have higher precedence than
+  multiplication, division, addition and subtraction.
 */
 {
+    if (match(TokenType::MINUS))
+    {
+        Token op = previous();
+
+        auto right = unary();
+
+        return std::make_unique<Unary>(
+            op,
+            std::move(right));
+    }
+
     return primary();
 }
 

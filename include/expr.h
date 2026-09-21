@@ -30,6 +30,19 @@ public:
            std::unique_ptr<Expr> right);
 };
 
+// Represents unary expressions such as:
+// -10
+// -age
+class Unary : public Expr
+{
+public:
+    Token op;
+    std::unique_ptr<Expr> right;
+
+    Unary(const Token& op,
+          std::unique_ptr<Expr> right);
+};
+
 class Grouping : public Expr
 {
 public:

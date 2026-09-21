@@ -8,11 +8,11 @@ int main()
 {
     std::string source = R"(
 
-dock age = 20;
+dock x = -10;
 
-receive(age);
+dock y = 5;
 
-transmit(age);
+transmit(x + y);
 
 )";
 

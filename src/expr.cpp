@@ -14,6 +14,13 @@ Binary::Binary(std::unique_ptr<Expr> left,
 {
 }
 
+Unary::Unary(const Token& op,
+             std::unique_ptr<Expr> right)
+    : op(op),
+      right(std::move(right))
+{
+}
+
 Grouping::Grouping(std::unique_ptr<Expr> expression)
     : expression(std::move(expression))
 {

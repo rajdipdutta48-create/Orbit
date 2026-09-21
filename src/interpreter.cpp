@@ -14,6 +14,24 @@ double Interpreter::evaluate(const Expr* expr)
         return environment[variable->name.lexeme];
     }
 
+    // Evaluate a unary expression.
+    // Example:
+    // -10
+    // -age
+    if (auto unary = dynamic_cast<const Unary*>(expr))
+    {
+        double right = evaluate(unary->right.get());
+
+        switch (unary->op.type)
+        {
+        case TokenType::MINUS:
+            return -right;
+
+        default:
+            return 0;
+        }
+    }
+
     // Evaluate a binary expression recursively.
     if (auto binary = dynamic_cast<const Binary*>(expr))
     {

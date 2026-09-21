@@ -164,12 +164,13 @@ public:
 
 // Represents:
 // receive(age);
+// receive(numbers[1]);
 class InputStmt : public Stmt
 {
 public:
-    Token name;
+    std::unique_ptr<Expr> target;
 
-    InputStmt(const Token& name);
+    InputStmt(std::unique_ptr<Expr> target);
 };
 
 // Represents:

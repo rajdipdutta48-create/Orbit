@@ -8,12 +8,13 @@ int main()
 {
   std::string source = R"(
 
-dock x = 10;
+nebula nums = [10, 20, 30];
 
-x = y;
+dock i = 1;
 
-transmit(x);
+receive(nums[i]);
 
+transmit(nums);
 )";
 
     // Step 1: Convert source code into tokens

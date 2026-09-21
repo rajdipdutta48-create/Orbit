@@ -446,18 +446,91 @@ void Interpreter::execute(const Stmt* stmt)
     }
 
     // Input statement:
+    //
     // receive(age);
+    // receive(numbers[1]);
     if (auto input = dynamic_cast<const InputStmt*>(stmt))
     {
         double value;
 
-        std::cout << "Enter " << input->name.lexeme << ": ";
+        std::cout << "Enter value: ";
 
         std::cin >> value;
 
-        environment[input->name.lexeme] = value;
+        // receive(variable);
+        if (auto variable =
+                dynamic_cast<const Variable*>(input->target.get()))
+        {
+            auto it = environment.find(variable->name.lexeme);
 
-        return;
+            if (it == environment.end())
+            {
+                throw RuntimeError(
+                    "Undefined variable '" +
+                    variable->name.lexeme +
+                    "'");
+            }
+
+            it->second = value;
+
+            return;
+        }
+
+        // receive(numbers[index]);
+        if (auto indexExpr =
+                dynamic_cast<const IndexExpr*>(input->target.get()))
+        {
+            Value object = evaluate(indexExpr->object.get());
+            Value index = evaluate(indexExpr->index.get());
+
+            // The object being indexed must be an array.
+            if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+            {
+                throw RuntimeError(
+                    "Only nebula arrays can be indexed");
+            }
+
+            // Array indexes must be numbers.
+            if (!std::holds_alternative<double>(index))
+            {
+                throw RuntimeError(
+                    "Array index must be a number");
+            }
+
+            double indexValue = std::get<double>(index);
+
+            // Array indexes must be whole numbers.
+            if (std::floor(indexValue) != indexValue)
+            {
+                throw RuntimeError(
+                    "Array index must be an integer");
+            }
+
+            if (indexValue < 0)
+            {
+                throw RuntimeError(
+                    "Array index cannot be negative");
+            }
+
+            auto array =
+                std::get<std::shared_ptr<ArrayValue>>(object);
+
+            // Check that the index is inside the array.
+            if (indexValue >= array->elements.size())
+            {
+                throw RuntimeError(
+                    "Array index out of bounds");
+            }
+
+            // Store the input inside the array.
+            array->elements[
+                static_cast<size_t>(indexValue)] = value;
+
+            return;
+        }
+
+        throw RuntimeError(
+            "Invalid receive target");
     }
 
     // Conditional statement:
@@ -475,7 +548,7 @@ void Interpreter::execute(const Stmt* stmt)
         if (!std::holds_alternative<bool>(condition))
         {
             throw RuntimeError(
-                "Condition of 'when' must be a boolean");
+                "Condition of 'when' must be boolean");
         }
 
         if (std::get<bool>(condition))

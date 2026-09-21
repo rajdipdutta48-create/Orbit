@@ -11,14 +11,32 @@
 
 #include "expr.h"
 
+// Forward declaration because an ArrayValue contains Orbit Values.
+struct ArrayValue;
+
 // Represents a value that can exist at runtime in Orbit.
 //
 // Currently supported:
 // - double
 // - bool
+// - array
+using Value = std::variant<
+    double,
+    bool,
+    std::shared_ptr<ArrayValue>>;
+
+// Represents an Orbit array.
 //
-// More types such as string can be added later.
-using Value = std::variant<double, bool>;
+// Example:
+//
+// nebula numbers = [10, 20, 30];
+//
+// Each element is itself a Value, so arrays can later
+// support different value types and nested arrays.
+struct ArrayValue
+{
+    std::vector<Value> elements;
+};
 
 // Represents an error that occurs while executing Orbit code.
 class RuntimeError : public std::runtime_error

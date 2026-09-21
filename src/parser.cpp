@@ -532,16 +532,18 @@ std::unique_ptr<Stmt> Parser::inputStatement()
   Parses:
 
       receive(age);
+      receive(numbers[1]);
 
-  The identifier represents the variable
-  that will receive user input.
+  The target can be:
+  - a normal variable
+  - an indexed nebula element
 */
 {
     // Consume '('
     match(TokenType::LEFT_PAREN);
 
-    // Read the variable name.
-    Token name = advance();
+    // Parse the target expression.
+    auto target = expression();
 
     // Consume ')'
     match(TokenType::RIGHT_PAREN);
@@ -549,7 +551,8 @@ std::unique_ptr<Stmt> Parser::inputStatement()
     // Consume ';'
     match(TokenType::SEMICOLON);
 
-    return std::make_unique<InputStmt>(name);
+    return std::make_unique<InputStmt>(
+        std::move(target));
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement()

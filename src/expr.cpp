@@ -86,8 +86,8 @@ ExpressionStmt::ExpressionStmt(std::unique_ptr<Expr> expression)
 {
 }
 
-InputStmt::InputStmt(const Token& name)
-    : name(name)
+InputStmt::InputStmt(std::unique_ptr<Expr> target)
+    : target(std::move(target))
 {
 }
 

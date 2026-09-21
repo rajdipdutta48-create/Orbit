@@ -7,29 +7,43 @@
 class Expr
 {
 public:
-  virtual ~Expr() = default;
+    virtual ~Expr() = default;
 };
 
 class Literal : public Expr
 {
 public:
-  Token value;
+    Token value;
 
-  Literal(const Token &value);
+    Literal(const Token& value);
 };
 
 class Binary : public Expr
 {
 public:
-  std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> left;
+    Token op;
+    std::unique_ptr<Expr> right;
 
-  Token op;
+    Binary(std::unique_ptr<Expr> left,
+           const Token& op,
+           std::unique_ptr<Expr> right);
+};
 
-  std::unique_ptr<Expr> right;
+class Grouping : public Expr
+{
+public:
+    std::unique_ptr<Expr> expression;
 
-  Binary(std::unique_ptr<Expr> left,
-         const Token &op,
-         std::unique_ptr<Expr> right);
+    Grouping(std::unique_ptr<Expr> expression);
+};
+
+class Variable : public Expr
+{
+public:
+    Token name;
+
+    Variable(const Token& name);
 };
 
 #endif

@@ -1,90 +1,191 @@
 #include "../include/parser.h"
 
 Parser::Parser(const std::vector<Token> &tokens)
+    : tokens(tokens), current(0)
 {
-  this->tokens = tokens;
-  current = 0;
 }
 
 Token Parser::peek() // Returns the current token without moving to the next one.
 {
-  return tokens[current];
+    return tokens[current];
 }
 
 Token Parser::previous() // Returns the token just before the current position.
 {
-  return tokens[current - 1];
+    return tokens[current - 1];
 }
 
 bool Parser::isAtEnd() // Checks whether the parser has reached the END_OF_FILE token.
 {
-  return peek().type == TokenType::END_OF_FILE;
+    return peek().type == TokenType::END_OF_FILE;
 }
 
 Token Parser::advance() // Moves to the next token and returns the token that was just consumed.
 {
-  if (!isAtEnd())
-  {
-    current++;
-  }
+    if (!isAtEnd())
+    {
+        current++;
+    }
 
-  return previous();
+    return previous();
 }
 
 bool Parser::check(TokenType type) // Checks whether the current token is of the expected type.
 {
-  if (isAtEnd())
-  {
+    if (isAtEnd())
+    {
+        return false;
+    }
+
+    return peek().type == type;
+}
+
+bool Parser::match(TokenType type)
+/*
+  If the current token matches the expected type,
+  consume it by advancing and return true.
+
+  Otherwise, leave the parser unchanged and return false.
+*/
+{
+    if (check(type))
+    {
+        advance();
+        return true;
+    }
+
     return false;
-  }
-
-  return peek().type == type;
 }
 
-bool Parser::match(TokenType type) /* If the current token matches the expected type,consume it by advancing and return true.Otherwise, leave the parser unchanged and return false.*/
-{
-  if (check(type))
-  {
-    advance();
-    return true;
-  }
+std::unique_ptr<Expr> Parser::primary()
+/*
+  Parses the simplest expressions.
 
-  return false;
+  Currently supports:
+  - Number literals
+  - Parenthesized expressions
+  - Variables / identifiers
+*/
+{
+    // Example: 123
+    if (match(TokenType::NUMBER))
+    {
+        return std::make_unique<Literal>(previous());
+    }
+
+    // Example: (10 + 20)
+    if (match(TokenType::LEFT_PAREN))
+    {
+        auto expr = expression();
+
+        match(TokenType::RIGHT_PAREN);
+
+        return std::make_unique<Grouping>(std::move(expr));
+    }
+
+    // Example: age
+    if (match(TokenType::IDENTIFIER))
+    {
+        return std::make_unique<Variable>(previous());
+    }
+
+    // No valid primary expression was found.
+    return nullptr;
 }
 
-std::unique_ptr<Expr> Parser::primary() /*Parses the simplest expression (currently only literals)
-  and creates the corresponding AST node.*/
-{
-  if (match(TokenType::NUMBER))
-  {
-    return std::make_unique<Literal>(previous());
-  }
+std::unique_ptr<Expr> Parser::unary()
+/*
+  Parses unary expressions.
 
-  return nullptr;
+  Unary operators will be added later.
+  For now, it simply passes control to primary().
+*/
+{
+    return primary();
 }
 
-std::unique_ptr<Expr> Parser::expression() /*Parses a simple binary expression containing '+'.
-  Creates a Binary AST node from two primary expressions.*/
+std::unique_ptr<Expr> Parser::factor()
+/*
+  Parses multiplication and division.
+
+  factor handles:
+      *
+      /
+
+  Because factor() is called before term(),
+  multiplication and division get higher precedence
+  than addition and subtraction.
+*/
 {
-  auto left = primary();
+    auto left = unary();
 
-  while (match(TokenType::PLUS))
-  {
-    Token op = previous();
+    while (match(TokenType::STAR) || match(TokenType::SLASH))
+    {
+        Token op = previous();
 
-    auto right = primary();
+        auto right = unary();
 
-    left = std::make_unique<Binary>(
-        std::move(left),
-        op,
-        std::move(right));
-  }
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
 
-  return left;
+    return left;
 }
 
-std::unique_ptr<Expr> Parser::parse() /*Entry point of the parser.
- Starts parsing from the highest grammar rule.*/
+std::unique_ptr<Expr> Parser::term()
+/*
+  Parses addition and subtraction.
+
+  term handles:
+      +
+      -
+
+  It calls factor() first, so expressions such as:
+
+      10 + 20 * 5
+
+  are parsed as:
+
+      10 + (20 * 5)
+*/
 {
-  return expression();
+    auto left = factor();
+
+    while (match(TokenType::PLUS) || match(TokenType::MINUS))
+    {
+        Token op = previous();
+
+        auto right = factor();
+
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::expression()
+/*
+  Entry point for expressions.
+
+  Currently expression() delegates to term().
+  More grammar levels such as comparison and equality
+  can be added above term() later.
+*/
+{
+    return term();
+}
+
+std::unique_ptr<Expr> Parser::parse()
+/*
+  Main entry point of the parser.
+
+  Starts parsing from the highest expression grammar rule.
+*/
+{
+    return expression();
 }

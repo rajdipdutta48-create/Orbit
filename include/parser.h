@@ -10,30 +10,28 @@
 class Parser
 {
 private:
-  std::vector<Token> tokens;
+    std::vector<Token> tokens;
+    int current;
 
-  int current;
+    bool isAtEnd();
 
-  bool isAtEnd();
+    Token peek();
+    Token previous();
+    Token advance();
 
-  Token peek();
+    bool check(TokenType type);
+    bool match(TokenType type);
 
-  Token previous();
-
-  Token advance();
-
-  bool check(TokenType type);
-
-  bool match(TokenType type);
-
-  std::unique_ptr<Expr> primary();
-
-  std::unique_ptr<Expr> expression();
+    std::unique_ptr<Expr> primary();
+    std::unique_ptr<Expr> unary();
+    std::unique_ptr<Expr> factor();
+    std::unique_ptr<Expr> term();
+    std::unique_ptr<Expr> expression();
 
 public:
-  Parser(const std::vector<Token> &tokens);
+    Parser(const std::vector<Token>& tokens);
 
-  std::unique_ptr<Expr> parse();
+    std::unique_ptr<Expr> parse();
 };
 
 #endif

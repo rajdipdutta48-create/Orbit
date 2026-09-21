@@ -270,22 +270,48 @@ void Lexer::skipComment() // ignores comments inside code
 {
     while (!isAtEnd())
     {
+        // Skip spaces and other whitespace before the next word.
+        while (!isAtEnd() &&
+               (peek() == ' ' || peek() == '\t' || peek() == '\r'))
+        {
+            advance();
+        }
+
+        // Read the next word.
         std::string word;
 
-        while (!isAtEnd() && peek() != '\n')
+        while (!isAtEnd() && isAlphaNumeric(peek()))
         {
             word += advance();
         }
 
+        // If the word is "burn", the comment is finished.
         if (word == "burn")
         {
             return;
         }
 
-        if (!isAtEnd())
+        // Ignore other characters inside the comment.
+        if (!isAtEnd() && peek() != '\n')
         {
-            line++;
             advance();
         }
+
+        // If the comment reaches a new line without "burn",
+        // report an unterminated comment.
+        if (!isAtEnd() && peek() == '\n')
+        {
+            std::cerr << "Lexer Error: Unterminated comment at line "
+                      << line
+                      << std::endl;
+            advance();
+            line++;
+            return;
+        }
     }
+
+    // Reached the end of the source without finding "burn".
+    std::cerr << "Lexer Error: Unterminated comment at line "
+              << line
+              << std::endl;
 }

@@ -98,9 +98,6 @@ std::unique_ptr<Expr> Parser::unary()
 /*
   Parses unary expressions.
 
-  Currently supports:
-      -expression
-
   Examples:
       -10
       -age
@@ -188,14 +185,107 @@ std::unique_ptr<Expr> Parser::term()
     return left;
 }
 
+std::unique_ptr<Expr> Parser::comparison()
+/*
+  Parses comparison expressions.
+
+  comparison handles:
+
+      <
+      <=
+      >
+      >=
+
+  Comparison has lower precedence than
+  arithmetic expressions.
+
+  Example:
+
+      10 + 5 > 12
+
+  becomes:
+
+      (10 + 5) > 12
+*/
+{
+    auto left = term();
+
+    while (match(TokenType::LESS) ||
+           match(TokenType::LESS_EQUAL) ||
+           match(TokenType::GREATER) ||
+           match(TokenType::GREATER_EQUAL))
+    {
+        Token op = previous();
+
+        auto right = term();
+
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::equality()
+/*
+  Parses equality expressions.
+
+  equality handles:
+
+      ==
+      !=
+
+  Equality has lower precedence than
+  comparison expressions.
+
+  Example:
+
+      age > 18 == true
+
+  will eventually be represented by
+  nested Binary expressions.
+*/
+{
+    auto left = comparison();
+
+    while (match(TokenType::EQUAL_EQUAL) ||
+           match(TokenType::NOT_EQUAL))
+    {
+        Token op = previous();
+
+        auto right = comparison();
+
+        left = std::make_unique<Binary>(
+            std::move(left),
+            op,
+            std::move(right));
+    }
+
+    return left;
+}
+
 std::unique_ptr<Expr> Parser::expression()
 /*
   Entry point for expressions.
 
-  Currently expression() delegates to term().
+  The precedence chain is:
+
+      equality
+          ↓
+      comparison
+          ↓
+      term
+          ↓
+      factor
+          ↓
+      unary
+          ↓
+      primary
 */
 {
-    return term();
+    return equality();
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration()

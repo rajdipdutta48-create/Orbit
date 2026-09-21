@@ -1,6 +1,7 @@
 #include "../include/interpreter.h"
+#include <variant>
 
-double Interpreter::evaluate(const Expr* expr)
+Value Interpreter::evaluate(const Expr* expr)
 {
     // Evaluate a number literal.
     if (auto literal = dynamic_cast<const Literal*>(expr))
@@ -20,40 +21,58 @@ double Interpreter::evaluate(const Expr* expr)
     // -age
     if (auto unary = dynamic_cast<const Unary*>(expr))
     {
-        double right = evaluate(unary->right.get());
+        Value right = evaluate(unary->right.get());
 
-        switch (unary->op.type)
+        if (unary->op.type == TokenType::MINUS)
         {
-        case TokenType::MINUS:
-            return -right;
-
-        default:
-            return 0;
+            return -std::get<double>(right);
         }
+
+        return 0.0;
     }
 
     // Evaluate a binary expression recursively.
     if (auto binary = dynamic_cast<const Binary*>(expr))
     {
-        double left = evaluate(binary->left.get());
-        double right = evaluate(binary->right.get());
+        Value left = evaluate(binary->left.get());
+        Value right = evaluate(binary->right.get());
 
+        // Arithmetic operators work with numbers.
         switch (binary->op.type)
         {
         case TokenType::PLUS:
-            return left + right;
+            return std::get<double>(left) + std::get<double>(right);
 
         case TokenType::MINUS:
-            return left - right;
+            return std::get<double>(left) - std::get<double>(right);
 
         case TokenType::STAR:
-            return left * right;
+            return std::get<double>(left) * std::get<double>(right);
 
         case TokenType::SLASH:
-            return left / right;
+            return std::get<double>(left) / std::get<double>(right);
+
+        // Comparison operators produce boolean values.
+        case TokenType::LESS:
+            return std::get<double>(left) < std::get<double>(right);
+
+        case TokenType::LESS_EQUAL:
+            return std::get<double>(left) <= std::get<double>(right);
+
+        case TokenType::GREATER:
+            return std::get<double>(left) > std::get<double>(right);
+
+        case TokenType::GREATER_EQUAL:
+            return std::get<double>(left) >= std::get<double>(right);
+
+        case TokenType::EQUAL_EQUAL:
+            return left == right;
+
+        case TokenType::NOT_EQUAL:
+            return left != right;
 
         default:
-            return 0;
+            return 0.0;
         }
     }
 
@@ -63,7 +82,24 @@ double Interpreter::evaluate(const Expr* expr)
         return evaluate(grouping->expression.get());
     }
 
-    return 0;
+    return 0.0;
+}
+
+void Interpreter::printValue(const Value& value)
+{
+    // Print numbers.
+    if (std::holds_alternative<double>(value))
+    {
+        std::cout << std::get<double>(value);
+    }
+
+    // Print booleans.
+    else if (std::holds_alternative<bool>(value))
+    {
+        std::cout << (std::get<bool>(value) ? "true" : "false");
+    }
+
+    std::cout << std::endl;
 }
 
 void Interpreter::execute(const Stmt* stmt)
@@ -72,7 +108,7 @@ void Interpreter::execute(const Stmt* stmt)
     // dock age = 20;
     if (auto var = dynamic_cast<const VarStmt*>(stmt))
     {
-        double value = evaluate(var->initializer.get());
+        Value value = evaluate(var->initializer.get());
 
         environment[var->name.lexeme] = value;
 
@@ -83,8 +119,9 @@ void Interpreter::execute(const Stmt* stmt)
     // transmit(age);
     if (auto print = dynamic_cast<const PrintStmt*>(stmt))
     {
-        std::cout << evaluate(print->expression.get())
-                  << std::endl;
+        Value value = evaluate(print->expression.get());
+
+        printValue(value);
 
         return;
     }

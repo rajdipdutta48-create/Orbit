@@ -8,11 +8,11 @@ int main()
 {
     std::string source = R"(
 
-dock x = -10;
+dock x = 5;
 
 dock y = 5;
 
-transmit(x + y);
+transmit(x <= y);
 
 )";
 

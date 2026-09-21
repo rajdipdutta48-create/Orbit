@@ -14,6 +14,8 @@ Lexer::Lexer(const std::string &source)
     keywords["receive"] = TokenType::RECEIVE;
     keywords["true"] = TokenType::TRUE;
     keywords["false"] = TokenType::FALSE;
+    keywords["when"] = TokenType::WHEN;
+    keywords["else"] = TokenType::ELSE;
 }
 
 bool Lexer::isAtEnd() // tells us if the current has reached the end or not.
@@ -216,6 +218,16 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
     case ')':
         tokens.push_back(
             Token(TokenType::RIGHT_PAREN, ")", line));
+        break;
+
+    case '{':
+        tokens.push_back(
+            Token(TokenType::LEFT_BRACE, "{", line));
+        break;
+
+    case '}':
+        tokens.push_back(
+            Token(TokenType::RIGHT_BRACE, "}", line));
         break;
 
     case ' ':

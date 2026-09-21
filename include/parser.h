@@ -42,6 +42,12 @@ private:
     std::unique_ptr<Stmt> inputStatement();
     std::unique_ptr<Stmt> expressionStatement();
 
+    // Control flow
+    std::unique_ptr<Stmt> whenStatement();
+
+    // Parses all statements inside { }
+    std::vector<std::unique_ptr<Stmt>> block();
+
 public:
     Parser(const std::vector<Token>& tokens);
 

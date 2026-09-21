@@ -12,6 +12,8 @@ enum class TokenType
     RECEIVE,
     TRUE,
     FALSE,
+    WHEN,
+    ELSE,
 
     // Identifiers and literals
     IDENTIFIER,

@@ -59,3 +59,13 @@ InputStmt::InputStmt(const Token& name)
     : name(name)
 {
 }
+
+IfStmt::IfStmt(
+    std::unique_ptr<Expr> condition,
+    std::vector<std::unique_ptr<Stmt>> thenBranch,
+    std::vector<std::unique_ptr<Stmt>> elseBranch)
+    : condition(std::move(condition)),
+      thenBranch(std::move(thenBranch)),
+      elseBranch(std::move(elseBranch))
+{
+}

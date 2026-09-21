@@ -471,6 +471,80 @@ std::unique_ptr<Stmt> Parser::expressionStatement()
         std::move(value));
 }
 
+std::vector<std::unique_ptr<Stmt>> Parser::block()
+/*
+  Parses a block of statements inside:
+
+      {
+          ...
+      }
+
+  The opening '{' must already have been consumed.
+*/
+{
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd())
+    {
+        statements.push_back(declaration());
+    }
+
+    // Consume the closing '}'
+    match(TokenType::RIGHT_BRACE);
+
+    return statements;
+}
+
+std::unique_ptr<Stmt> Parser::whenStatement()
+/*
+  Parses:
+
+      when (condition) {
+          statements
+      }
+
+  Optional else:
+
+      when (condition) {
+          statements
+      } else {
+          statements
+      }
+*/
+{
+    // Consume '('
+    match(TokenType::LEFT_PAREN);
+
+    // Parse the condition.
+    auto condition = expression();
+
+    // Consume ')'
+    match(TokenType::RIGHT_PAREN);
+
+    // Consume '{'
+    match(TokenType::LEFT_BRACE);
+
+    // Parse the statements inside the when block.
+    auto thenBranch = block();
+
+    std::vector<std::unique_ptr<Stmt>> elseBranch;
+
+    // Check whether an else block exists.
+    if (match(TokenType::ELSE))
+    {
+        // Consume '{'
+        match(TokenType::LEFT_BRACE);
+
+        // Parse the statements inside the else block.
+        elseBranch = block();
+    }
+
+    return std::make_unique<IfStmt>(
+        std::move(condition),
+        std::move(thenBranch),
+        std::move(elseBranch));
+}
+
 std::unique_ptr<Stmt> Parser::statement()
 /*
   Determines which type of statement
@@ -485,6 +559,11 @@ std::unique_ptr<Stmt> Parser::statement()
     if (match(TokenType::RECEIVE))
     {
         return inputStatement();
+    }
+
+    if (match(TokenType::WHEN))
+    {
+        return whenStatement();
     }
 
     return expressionStatement();

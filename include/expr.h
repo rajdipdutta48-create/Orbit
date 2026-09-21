@@ -2,6 +2,7 @@
 #define EXPR_H
 
 #include <memory>
+#include <vector>
 #include "token.h"
 
 class Expr
@@ -118,6 +119,27 @@ public:
     Token name;
 
     InputStmt(const Token& name);
+};
+
+// Represents:
+//
+// when (condition) {
+//     statements
+// } else {
+//     statements
+// }
+class IfStmt : public Stmt
+{
+public:
+    std::unique_ptr<Expr> condition;
+
+    std::vector<std::unique_ptr<Stmt>> thenBranch;
+    std::vector<std::unique_ptr<Stmt>> elseBranch;
+
+    IfStmt(
+        std::unique_ptr<Expr> condition,
+        std::vector<std::unique_ptr<Stmt>> thenBranch,
+        std::vector<std::unique_ptr<Stmt>> elseBranch);
 };
 
 #endif

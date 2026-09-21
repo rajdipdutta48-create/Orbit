@@ -290,6 +290,44 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
+    // Conditional statement:
+    //
+    // when (condition) {
+    //     statements
+    // } else {
+    //     statements
+    // }
+    if (auto ifStmt = dynamic_cast<const IfStmt*>(stmt))
+    {
+        Value condition = evaluate(ifStmt->condition.get());
+
+        // The condition of a when statement must be boolean.
+        if (!std::holds_alternative<bool>(condition))
+        {
+            throw RuntimeError(
+                "Condition of 'when' must be a boolean");
+        }
+
+        if (std::get<bool>(condition))
+        {
+            // Execute the when branch.
+            for (const auto& statement : ifStmt->thenBranch)
+            {
+                execute(statement.get());
+            }
+        }
+        else
+        {
+            // Execute the else branch if it exists.
+            for (const auto& statement : ifStmt->elseBranch)
+            {
+                execute(statement.get());
+            }
+        }
+
+        return;
+    }
+
     // Standalone expression:
     // age = 25;
     if (auto expressionStmt = dynamic_cast<const ExpressionStmt*>(stmt))

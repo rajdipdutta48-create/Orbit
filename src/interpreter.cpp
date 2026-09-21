@@ -1,5 +1,6 @@
 #include "../include/interpreter.h"
 #include <variant>
+#include <cmath>
 
 Value Interpreter::evaluate(const Expr* expr)
 {
@@ -66,6 +67,133 @@ Value Interpreter::evaluate(const Expr* expr)
         it->second = value;
 
         return value;
+    }
+
+    // Evaluate an assignment to an array element.
+    //
+    // Example:
+    // numbers[1] = 99;
+    if (auto indexAssignment =
+            dynamic_cast<const IndexAssignment*>(expr))
+    {
+        Value object = evaluate(indexAssignment->object.get());
+        Value index = evaluate(indexAssignment->index.get());
+        Value value = evaluate(indexAssignment->value.get());
+
+        // The object being indexed must be an array.
+        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+        {
+            throw RuntimeError(
+                "Only nebula arrays can be indexed");
+        }
+
+        // Array indexes must be numbers.
+        if (!std::holds_alternative<double>(index))
+        {
+            throw RuntimeError(
+                "Array index must be a number");
+        }
+
+        double indexValue = std::get<double>(index);
+
+        // Array indexes must be whole numbers.
+        if (std::floor(indexValue) != indexValue)
+        {
+            throw RuntimeError(
+                "Array index must be an integer");
+        }
+
+        if (indexValue < 0)
+        {
+            throw RuntimeError(
+                "Array index cannot be negative");
+        }
+
+        auto array = std::get<std::shared_ptr<ArrayValue>>(object);
+
+        // Check that the index is inside the array.
+        if (indexValue >= array->elements.size())
+        {
+            throw RuntimeError(
+                "Array index out of bounds");
+        }
+
+        // Replace the existing element.
+        array->elements[
+            static_cast<size_t>(indexValue)] = value;
+
+        return value;
+    }
+
+    // Evaluate a nebula array literal.
+    //
+    // Example:
+    // [10, 20, 30]
+    //
+    // Every element is evaluated first and then stored
+    // inside the array.
+    if (auto nebula = dynamic_cast<const NebulaLiteral*>(expr))
+    {
+        auto array = std::make_shared<ArrayValue>();
+
+        for (const auto& element : nebula->elements)
+        {
+            array->elements.push_back(
+                evaluate(element.get()));
+        }
+
+        return array;
+    }
+
+    // Evaluate array indexing.
+    //
+    // Example:
+    // numbers[0]
+    if (auto indexExpr = dynamic_cast<const IndexExpr*>(expr))
+    {
+        Value object = evaluate(indexExpr->object.get());
+        Value index = evaluate(indexExpr->index.get());
+
+        // The object being indexed must be an array.
+        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+        {
+            throw RuntimeError(
+                "Only nebula arrays can be indexed");
+        }
+
+        // Array indexes must be numbers.
+        if (!std::holds_alternative<double>(index))
+        {
+            throw RuntimeError(
+                "Array index must be a number");
+        }
+
+        double indexValue = std::get<double>(index);
+
+        // Array indexes must be whole numbers.
+        if (std::floor(indexValue) != indexValue)
+        {
+            throw RuntimeError(
+                "Array index must be an integer");
+        }
+
+        if (indexValue < 0)
+        {
+            throw RuntimeError(
+                "Array index cannot be negative");
+        }
+
+        auto array = std::get<std::shared_ptr<ArrayValue>>(object);
+
+        // Check that the index is inside the array.
+        if (indexValue >= array->elements.size())
+        {
+            throw RuntimeError(
+                "Array index out of bounds");
+        }
+
+        return array->elements[
+            static_cast<size_t>(indexValue)];
     }
 
     // Evaluate a unary expression.
@@ -189,7 +317,7 @@ Value Interpreter::evaluate(const Expr* expr)
             return leftValue >= rightValue;
         }
 
-        // Equality works with both numbers and booleans.
+        // Equality works with numbers, booleans and arrays.
         case TokenType::EQUAL_EQUAL:
             return left == right;
 
@@ -248,7 +376,27 @@ void Interpreter::printValue(const Value& value)
         std::cout << (std::get<bool>(value) ? "true" : "false");
     }
 
-    std::cout << std::endl;
+    // Print nebula arrays.
+    else if (std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
+    {
+        auto array = std::get<std::shared_ptr<ArrayValue>>(value);
+
+        std::cout << "[";
+
+        for (size_t i = 0; i < array->elements.size(); i++)
+        {
+            // printValue() does not add a newline,
+            // so nested values stay on the same line.
+            printValue(array->elements[i]);
+
+            if (i + 1 < array->elements.size())
+            {
+                std::cout << ", ";
+            }
+        }
+
+        std::cout << "]";
+    }
 }
 
 void Interpreter::execute(const Stmt* stmt)
@@ -264,6 +412,24 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
+    // Nebula declaration:
+    // nebula numbers = [10, 20, 30];
+    if (auto nebula = dynamic_cast<const NebulaStmt*>(stmt))
+    {
+        Value value = evaluate(nebula->initializer.get());
+
+        // The initializer must actually evaluate to an array.
+        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
+        {
+            throw RuntimeError(
+                "Nebula initializer must be an array");
+        }
+
+        environment[nebula->name.lexeme] = value;
+
+        return;
+    }
+
     // Print statement:
     // transmit(age);
     if (auto print = dynamic_cast<const PrintStmt*>(stmt))
@@ -271,6 +437,10 @@ void Interpreter::execute(const Stmt* stmt)
         Value value = evaluate(print->expression.get());
 
         printValue(value);
+
+        // Add the newline only once, after the complete
+        // value has been printed.
+        std::cout << std::endl;
 
         return;
     }
@@ -343,7 +513,7 @@ void Interpreter::execute(const Stmt* stmt)
             if (!std::holds_alternative<bool>(condition))
             {
                 throw RuntimeError(
-                    "Condition of 'orbiting' must be a boolean");
+                    "Condition of 'orbiting' must be boolean");
             }
 
             // Stop when the condition becomes false.

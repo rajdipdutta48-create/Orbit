@@ -72,6 +72,45 @@ public:
                std::unique_ptr<Expr> value);
 };
 
+// Represents:
+// numbers[0]
+class IndexExpr : public Expr
+{
+public:
+    std::unique_ptr<Expr> object;
+    std::unique_ptr<Expr> index;
+
+    IndexExpr(
+        std::unique_ptr<Expr> object,
+        std::unique_ptr<Expr> index);
+};
+
+// Represents:
+// numbers[0] = 99
+class IndexAssignment : public Expr
+{
+public:
+    std::unique_ptr<Expr> object;
+    std::unique_ptr<Expr> index;
+    std::unique_ptr<Expr> value;
+
+    IndexAssignment(
+        std::unique_ptr<Expr> object,
+        std::unique_ptr<Expr> index,
+        std::unique_ptr<Expr> value);
+};
+
+// Represents:
+// [10, 20, 30]
+class NebulaLiteral : public Expr
+{
+public:
+    std::vector<std::unique_ptr<Expr>> elements;
+
+    NebulaLiteral(
+        std::vector<std::unique_ptr<Expr>> elements);
+};
+
 // Base class for all Orbit statements.
 class Stmt
 {
@@ -89,6 +128,18 @@ public:
 
     VarStmt(const Token& name,
             std::unique_ptr<Expr> initializer);
+};
+
+// Represents:
+// nebula numbers = [10, 20, 30];
+class NebulaStmt : public Stmt
+{
+public:
+    Token name;
+    std::unique_ptr<Expr> initializer;
+
+    NebulaStmt(const Token& name,
+               std::unique_ptr<Expr> initializer);
 };
 
 // Represents:

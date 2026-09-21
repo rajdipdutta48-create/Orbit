@@ -38,8 +38,39 @@ Assignment::Assignment(const Token& name,
 {
 }
 
+IndexExpr::IndexExpr(
+    std::unique_ptr<Expr> object,
+    std::unique_ptr<Expr> index)
+    : object(std::move(object)),
+      index(std::move(index))
+{
+}
+
+IndexAssignment::IndexAssignment(
+    std::unique_ptr<Expr> object,
+    std::unique_ptr<Expr> index,
+    std::unique_ptr<Expr> value)
+    : object(std::move(object)),
+      index(std::move(index)),
+      value(std::move(value))
+{
+}
+
+NebulaLiteral::NebulaLiteral(
+    std::vector<std::unique_ptr<Expr>> elements)
+    : elements(std::move(elements))
+{
+}
+
 VarStmt::VarStmt(const Token& name,
                  std::unique_ptr<Expr> initializer)
+    : name(name),
+      initializer(std::move(initializer))
+{
+}
+
+NebulaStmt::NebulaStmt(const Token& name,
+                       std::unique_ptr<Expr> initializer)
     : name(name),
       initializer(std::move(initializer))
 {

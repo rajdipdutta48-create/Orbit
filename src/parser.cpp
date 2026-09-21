@@ -6,22 +6,22 @@ Parser::Parser(const std::vector<Token> &tokens)
 {
 }
 
-Token Parser::peek() // Returns the current token without moving to the next one.
+Token Parser::peek()
 {
     return tokens[current];
 }
 
-Token Parser::previous() // Returns the token just before the current position.
+Token Parser::previous()
 {
     return tokens[current - 1];
 }
 
-bool Parser::isAtEnd() // Checks whether the parser has reached the END_OF_FILE token.
+bool Parser::isAtEnd()
 {
     return peek().type == TokenType::END_OF_FILE;
 }
 
-Token Parser::advance() // Moves to the next token and returns the token that was just consumed.
+Token Parser::advance()
 {
     if (!isAtEnd())
     {
@@ -31,7 +31,7 @@ Token Parser::advance() // Moves to the next token and returns the token that wa
     return previous();
 }
 
-bool Parser::check(TokenType type) // Checks whether the current token is of the expected type.
+bool Parser::check(TokenType type)
 {
     if (isAtEnd())
     {
@@ -67,6 +67,7 @@ std::unique_ptr<Expr> Parser::primary()
   - Boolean literals
   - Parenthesized expressions
   - Variables / identifiers
+  - Nebula literals
 */
 {
     // Example: 123
@@ -87,6 +88,30 @@ std::unique_ptr<Expr> Parser::primary()
         return std::make_unique<Literal>(previous());
     }
 
+    // Example:
+    // [10, 20, 30]
+    if (match(TokenType::LEFT_BRACKET))
+    {
+        std::vector<std::unique_ptr<Expr>> elements;
+
+        // Empty nebula:
+        // []
+        if (!check(TokenType::RIGHT_BRACKET))
+        {
+            do
+            {
+                elements.push_back(expression());
+            }
+            while (match(TokenType::COMMA));
+        }
+
+        // Consume ']'
+        match(TokenType::RIGHT_BRACKET);
+
+        return std::make_unique<NebulaLiteral>(
+            std::move(elements));
+    }
+
     // Example: (10 + 20)
     if (match(TokenType::LEFT_PAREN))
     {
@@ -105,6 +130,36 @@ std::unique_ptr<Expr> Parser::primary()
 
     // No valid primary expression was found.
     return nullptr;
+}
+
+std::unique_ptr<Expr> Parser::finishIndexing(
+    std::unique_ptr<Expr> object)
+/*
+  Parses array indexing after an expression.
+
+  Example:
+
+      numbers[0]
+
+  The expression before '[' becomes the object.
+  The expression inside '[' becomes the index.
+*/
+{
+    while (match(TokenType::LEFT_BRACKET))
+    {
+        // Parse the index without allowing an assignment
+        // inside the brackets.
+        auto index = logicalOr();
+
+        // Consume ']'
+        match(TokenType::RIGHT_BRACKET);
+
+        object = std::make_unique<IndexExpr>(
+            std::move(object),
+            std::move(index));
+    }
+
+    return object;
 }
 
 std::unique_ptr<Expr> Parser::unary()
@@ -134,7 +189,11 @@ std::unique_ptr<Expr> Parser::unary()
             std::move(right));
     }
 
-    return primary();
+    // Parse the primary expression first,
+    // then check whether it is being indexed.
+    auto object = primary();
+
+    return finishIndexing(std::move(object));
 }
 
 std::unique_ptr<Expr> Parser::factor()
@@ -321,14 +380,17 @@ std::unique_ptr<Expr> Parser::assignment()
 /*
   Parses assignment expressions.
 
-  Example:
+  Examples:
 
       age = 25;
+      numbers[1] = 99;
 
   Assignment has lower precedence than
   logical, equality and comparison expressions.
 
-  The left side must be a variable.
+  The left side must be either:
+  - a variable
+  - an indexed array element
 */
 {
     auto left = logicalOr();
@@ -339,12 +401,26 @@ std::unique_ptr<Expr> Parser::assignment()
 
         auto value = assignment();
 
-        // Assignment is only valid when the
-        // left side is a variable.
+        // Assignment to a normal variable.
         if (auto variable = dynamic_cast<Variable *>(left.get()))
         {
             return std::make_unique<Assignment>(
                 variable->name,
+                std::move(value));
+        }
+
+        // Assignment to an array element.
+        //
+        // Example:
+        // numbers[1] = 99;
+        if (auto indexExpr = dynamic_cast<IndexExpr *>(left.get()))
+        {
+            auto object = std::move(indexExpr->object);
+            auto index = std::move(indexExpr->index);
+
+            return std::make_unique<IndexAssignment>(
+                std::move(object),
+                std::move(index),
                 std::move(value));
         }
 
@@ -403,6 +479,29 @@ std::unique_ptr<Stmt> Parser::varDeclaration()
     match(TokenType::SEMICOLON);
 
     return std::make_unique<VarStmt>(
+        name,
+        std::move(initializer));
+}
+
+std::unique_ptr<Stmt> Parser::nebulaDeclaration()
+/*
+  Parses:
+
+      nebula numbers = [10, 20, 30];
+
+  The identifier becomes the nebula name.
+  The expression after '=' becomes its initializer.
+*/
+{
+    Token name = advance();
+
+    match(TokenType::EQUAL);
+
+    auto initializer = expression();
+
+    match(TokenType::SEMICOLON);
+
+    return std::make_unique<NebulaStmt>(
         name,
         std::move(initializer));
 }
@@ -609,12 +708,18 @@ std::unique_ptr<Stmt> Parser::statement()
 std::unique_ptr<Stmt> Parser::declaration()
 /*
   Determines whether the current statement
-  is a variable declaration or a normal statement.
+  is a variable declaration, nebula declaration,
+  or a normal statement.
 */
 {
     if (match(TokenType::DOCK))
     {
         return varDeclaration();
+    }
+
+    if (match(TokenType::NEBULA))
+    {
+        return nebulaDeclaration();
     }
 
     return statement();

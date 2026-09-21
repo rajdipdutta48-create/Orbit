@@ -15,6 +15,7 @@ enum class TokenType
     WHEN,
     ELSE,
     ORBITING,
+    NEBULA,
 
     // Identifiers and literals
     IDENTIFIER,
@@ -42,6 +43,9 @@ enum class TokenType
     RIGHT_PAREN,
     LEFT_BRACE,
     RIGHT_BRACE,
+    LEFT_BRACKET,
+    RIGHT_BRACKET,
+    COMMA,
     SEMICOLON,
 
     // Special token

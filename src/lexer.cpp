@@ -17,14 +17,15 @@ Lexer::Lexer(const std::string &source)
     keywords["when"] = TokenType::WHEN;
     keywords["else"] = TokenType::ELSE;
     keywords["orbiting"] = TokenType::ORBITING;
+    keywords["nebula"] = TokenType::NEBULA;
 }
 
-bool Lexer::isAtEnd() // tells us if the current has reached the end or not.
+bool Lexer::isAtEnd()
 {
     return current >= source.length();
 }
 
-char Lexer::peek() // returns the character of source which is at current position.
+char Lexer::peek()
 {
     if (isAtEnd())
         return '\0';
@@ -32,19 +33,19 @@ char Lexer::peek() // returns the character of source which is at current positi
     return source[current];
 }
 
-char Lexer::advance() // advances to the next iteration returning the current element.
+char Lexer::advance()
 {
     return source[current++];
 }
 
-bool Lexer::isAlpha(char c) // tells us if the character is an alphabet or not.
+bool Lexer::isAlpha(char c)
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
            (c == '_');
 }
 
-void Lexer::identifier() // Reads a complete identifier or keyword and creates the corresponding token.
+void Lexer::identifier()
 {
     std::string word;
 
@@ -53,7 +54,7 @@ void Lexer::identifier() // Reads a complete identifier or keyword and creates t
         word += advance();
     }
 
-    if (word == "comet" && peek() == ':') // skip
+    if (word == "comet" && peek() == ':')
     {
         advance();
 
@@ -74,7 +75,7 @@ void Lexer::identifier() // Reads a complete identifier or keyword and creates t
     }
 }
 
-void Lexer::scanToken() // Processes one lexical unit from the source code and creates the appropriate token.
+void Lexer::scanToken()
 {
     char c = advance();
 
@@ -231,6 +232,21 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
             Token(TokenType::RIGHT_BRACE, "}", line));
         break;
 
+    case '[':
+        tokens.push_back(
+            Token(TokenType::LEFT_BRACKET, "[", line));
+        break;
+
+    case ']':
+        tokens.push_back(
+            Token(TokenType::RIGHT_BRACKET, "]", line));
+        break;
+
+    case ',':
+        tokens.push_back(
+            Token(TokenType::COMMA, ",", line));
+        break;
+
     case ' ':
     case '\t':
     case '\r':
@@ -272,25 +288,25 @@ void Lexer::scanToken() // Processes one lexical unit from the source code and c
     }
 }
 
-std::vector<Token> Lexer::scanTokens() // used to fill the tokens vector.
+std::vector<Token> Lexer::scanTokens()
 {
     while (!isAtEnd())
     {
         scanToken();
     }
 
-    tokens.push_back( // this indicates the end of the code
+    tokens.push_back(
         Token(TokenType::END_OF_FILE, "", line));
 
     return tokens;
 }
 
-bool Lexer::isDigit(char c) // checks if the character is a number.
+bool Lexer::isDigit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-void Lexer::number() // Reads a complete numeric literal and creates a NUMBER token.
+void Lexer::number()
 {
     std::string value;
 
@@ -303,12 +319,12 @@ void Lexer::number() // Reads a complete numeric literal and creates a NUMBER to
         Token(TokenType::NUMBER, value, line));
 }
 
-bool Lexer::isAlphaNumeric(char c) // checks if the character is either numeric or alphabet.
+bool Lexer::isAlphaNumeric(char c)
 {
     return isAlpha(c) || isDigit(c);
 }
 
-void Lexer::stringLiteral() // generate string type tokens.
+void Lexer::stringLiteral()
 {
     std::string value;
 
@@ -333,7 +349,7 @@ void Lexer::stringLiteral() // generate string type tokens.
         Token(TokenType::STRING, value, line));
 }
 
-void Lexer::skipComment() // ignores comments inside code
+void Lexer::skipComment()
 {
     while (!isAtEnd())
     {

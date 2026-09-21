@@ -38,6 +38,7 @@ private:
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> varDeclaration();
+    std::unique_ptr<Stmt> nebulaDeclaration();
     std::unique_ptr<Stmt> printStatement();
     std::unique_ptr<Stmt> inputStatement();
     std::unique_ptr<Stmt> expressionStatement();
@@ -48,6 +49,10 @@ private:
 
     // Parses all statements inside { }
     std::vector<std::unique_ptr<Stmt>> block();
+
+    // Parses array indexing:
+    // numbers[0]
+    std::unique_ptr<Expr> finishIndexing(std::unique_ptr<Expr> object);
 
 public:
     Parser(const std::vector<Token>& tokens);

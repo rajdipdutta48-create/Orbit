@@ -6,26 +6,28 @@
 
 int main()
 {
-  std::string source = R"(
+    std::string source = R"(
 
-20 + 30
+20 + 30 * 5
 
 )";
 
-  // Step 1: Convert source code into tokens
-  Lexer lexer(source);
+    // Step 1: Convert source code into tokens
+    Lexer lexer(source);
 
-  std::vector<Token> tokens = lexer.scanTokens();
+    std::vector<Token> tokens = lexer.scanTokens();
 
-  // Step 2: Convert tokens into an AST
-  Parser parser(tokens);
+    // Step 2: Convert tokens into an AST
+    Parser parser(tokens);
 
-  std::unique_ptr<Expr> tree = parser.parse();
+    std::unique_ptr<Expr> tree = parser.parse();
 
-  // Step 3: Evaluate the AST
-  Interpreter interpreter;
+    // Step 3: Evaluate the AST
+    Interpreter interpreter;
 
-  std::cout << interpreter.evaluate(tree.get()) << std::endl;
+    std::cout << "Result: "
+              << interpreter.evaluate(tree.get())
+              << std::endl;
 
-  return 0;
+    return 0;
 }

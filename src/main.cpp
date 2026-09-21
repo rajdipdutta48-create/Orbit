@@ -8,7 +8,11 @@ int main()
 {
     std::string source = R"(
 
-20 + 30 * 5
+dock age = 20;
+
+transmit(age);
+
+transmit(20 + 30 * 5);
 
 )";
 
@@ -17,17 +21,15 @@ int main()
 
     std::vector<Token> tokens = lexer.scanTokens();
 
-    // Step 2: Convert tokens into an AST
+    // Step 2: Convert tokens into statements / AST
     Parser parser(tokens);
 
-    std::unique_ptr<Expr> tree = parser.parse();
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
 
-    // Step 3: Evaluate the AST
+    // Step 3: Execute the Orbit program
     Interpreter interpreter;
 
-    std::cout << "Result: "
-              << interpreter.evaluate(tree.get())
-              << std::endl;
+    interpreter.interpret(statements);
 
     return 0;
 }

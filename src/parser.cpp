@@ -173,19 +173,138 @@ std::unique_ptr<Expr> Parser::expression()
   Entry point for expressions.
 
   Currently expression() delegates to term().
-  More grammar levels such as comparison and equality
-  can be added above term() later.
 */
 {
     return term();
 }
 
-std::unique_ptr<Expr> Parser::parse()
+std::unique_ptr<Stmt> Parser::varDeclaration()
+/*
+  Parses:
+
+      dock age = 20;
+
+  The identifier becomes the variable name.
+  The expression after '=' becomes its initializer.
+*/
+{
+    Token name = advance();
+
+    match(TokenType::EQUAL);
+
+    auto initializer = expression();
+
+    match(TokenType::SEMICOLON);
+
+    return std::make_unique<VarStmt>(
+        name,
+        std::move(initializer));
+}
+
+std::unique_ptr<Stmt> Parser::printStatement()
+/*
+  Parses:
+
+      transmit(age);
+
+  The expression inside the parentheses
+  becomes the PrintStmt expression.
+*/
+{
+    match(TokenType::LEFT_PAREN);
+
+    auto value = expression();
+
+    match(TokenType::RIGHT_PAREN);
+    match(TokenType::SEMICOLON);
+
+    return std::make_unique<PrintStmt>(
+        std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::inputStatement()
+/*
+  Parses:
+
+      receive(age);
+
+  The identifier represents the variable
+  that will receive user input.
+*/
+{
+    Token name = advance();
+
+    match(TokenType::SEMICOLON);
+
+    return std::make_unique<InputStmt>(name);
+}
+
+std::unique_ptr<Stmt> Parser::expressionStatement()
+/*
+  Parses a standalone expression:
+
+      20 + 30;
+
+  This is useful even when the expression
+  isn't assigned to a variable.
+*/
+{
+    auto value = expression();
+
+    match(TokenType::SEMICOLON);
+
+    return std::make_unique<ExpressionStmt>(
+        std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::statement()
+/*
+  Determines which type of statement
+  starts at the current token.
+*/
+{
+    if (match(TokenType::TRANSMIT))
+    {
+        return printStatement();
+    }
+
+    if (match(TokenType::RECEIVE))
+    {
+        return inputStatement();
+    }
+
+    return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::declaration()
+/*
+  Determines whether the current statement
+  is a variable declaration or a normal statement.
+*/
+{
+    if (match(TokenType::DOCK))
+    {
+        return varDeclaration();
+    }
+
+    return statement();
+}
+
+std::vector<std::unique_ptr<Stmt>> Parser::parse()
 /*
   Main entry point of the parser.
 
-  Starts parsing from the highest expression grammar rule.
+  Unlike the old parser, this parser now processes
+  the entire Orbit program and produces a list of
+  statements instead of only one expression.
 */
 {
-    return expression();
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!isAtEnd())
+    {
+        statements.push_back(declaration());
+    }
+
+    return statements;
 }

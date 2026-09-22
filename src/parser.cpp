@@ -102,10 +102,18 @@ std::unique_ptr<Expr> Parser::primary()
         return std::make_unique<Literal>(previous());
     }
 
-    // Example:
+    // Examples:
+    //
     // [10, 20, 30]
     // ["Earth", "Mars"]
     // ['A', 'B', 'C']
+    //
+    // Nested nebula literals are also supported:
+    //
+    // [[1, 2], [3, 4]]
+    //
+    // Since every element is parsed as a normal expression,
+    // a nebula can contain another nebula at any depth.
     if (match(TokenType::LEFT_BRACKET))
     {
         std::vector<std::unique_ptr<Expr>> elements;
@@ -154,12 +162,26 @@ std::unique_ptr<Expr> Parser::finishIndexing(
 /*
   Parses array indexing after an expression.
 
-  Example:
+  Examples:
 
       numbers[0]
 
+      matrix[0][1]
+
+      cube[1][0][1]
+
   The expression before '[' becomes the object.
-  The expression inside '[' becomes the index.
+
+  Because this is handled inside a loop, indexing can be
+  chained to any depth:
+
+      a[0]
+      a[0][1]
+      a[0][1][2]
+      a[0][1][2][3]
+
+  Each additional '[index]' wraps the previous expression
+  inside another IndexExpr.
 */
 {
     while (match(TokenType::LEFT_BRACKET))
@@ -402,7 +424,12 @@ std::unique_ptr<Expr> Parser::assignment()
   Examples:
 
       age = 25;
+
       numbers[1] = 99;
+
+      matrix[0][1] = 99;
+
+      cube[1][0][1] = 50;
 
   Assignment has lower precedence than
   logical, equality and comparison expressions.
@@ -410,6 +437,24 @@ std::unique_ptr<Expr> Parser::assignment()
   The left side must be either:
   - a variable
   - an indexed array element
+
+  Indexed assignment supports arbitrary nesting because
+  an IndexExpr can itself contain another IndexExpr.
+
+  Example:
+
+      matrix[0][1] = 99;
+
+  is represented conceptually as:
+
+      IndexAssignment(
+          object = IndexExpr(
+              object = matrix,
+              index = 0
+          ),
+          index = 1,
+          value = 99
+      )
 */
 {
     auto left = logicalOr();
@@ -431,8 +476,17 @@ std::unique_ptr<Expr> Parser::assignment()
 
         // Assignment to an array element.
         //
-        // Example:
+        // Examples:
+        //
         // numbers[1] = 99;
+        //
+        // matrix[0][1] = 99;
+        //
+        // cube[1][0][1] = 50;
+        //
+        // For nested indexing, indexExpr->object can itself
+        // be another IndexExpr. Moving it into IndexAssignment
+        // preserves the complete indexing chain.
         if (auto indexExpr =
                 dynamic_cast<IndexExpr *>(left.get()))
         {
@@ -513,6 +567,9 @@ std::unique_ptr<Stmt> Parser::nebulaDeclaration()
 
   The identifier becomes the nebula name.
   The expression after '=' becomes its initializer.
+
+  Nested nebula literals are supported because the
+  initializer is parsed as a normal expression.
 */
 {
     Token name = advance();
@@ -555,10 +612,12 @@ std::unique_ptr<Stmt> Parser::inputStatement()
 
       receive(age);
       receive(numbers[1]);
+      receive(matrix[0][1]);
 
   The target can be:
   - a normal variable
   - an indexed nebula element
+  - a nested indexed nebula element
 */
 {
     // Consume '('

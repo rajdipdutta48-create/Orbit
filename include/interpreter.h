@@ -22,6 +22,14 @@ struct ArrayValue;
 // - string
 // - char
 // - array
+//
+// Numbers are stored as double, so Orbit supports both
+// integer and decimal values.
+//
+// Examples:
+//
+// dock age = 20;
+// dock price = 99.99;
 using Value = std::variant<
     double,
     bool,
@@ -29,14 +37,50 @@ using Value = std::variant<
     char,
     std::shared_ptr<ArrayValue>>;
 
-// Represents an Orbit array.
+// Represents an Orbit nebula array.
 //
 // Example:
 //
 // nebula numbers = [10, 20, 30];
 //
-// Each element is itself a Value, so arrays can later
-// support different value types and nested arrays.
+// Each element is itself a Value, so arrays can contain:
+// - numbers
+// - decimal numbers
+// - booleans
+// - strings
+// - characters
+// - other arrays
+//
+// Because an element can itself be an ArrayValue, Orbit
+// naturally supports nested and multidimensional arrays.
+//
+// Example 2D array:
+//
+// nebula matrix = [
+//     [1.5, 2.5],
+//     [3.5, 4.5]
+// ];
+//
+// Access:
+//
+// matrix[0][1]
+//
+// Example 3D array:
+//
+// nebula cube = [
+//     [
+//         [1, 2],
+//         [3, 4]
+//     ],
+//     [
+//         [5, 6],
+//         [7, 8]
+//     ]
+// ];
+//
+// Access:
+//
+// cube[1][0][1]
 struct ArrayValue
 {
     std::vector<Value> elements;
@@ -65,6 +109,13 @@ private:
     void execute(const Stmt* stmt);
 
     // Prints a runtime value to the console.
+    //
+    // Arrays are printed recursively, so nested arrays
+    // are displayed correctly.
+    //
+    // Example:
+    //
+    // [[1, 2], [3, 4]]
     void printValue(const Value& value);
 
 public:

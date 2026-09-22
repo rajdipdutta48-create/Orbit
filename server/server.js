@@ -8,6 +8,9 @@ const app = express();
 
 const PORT = 5000;
 
+// Maximum time allowed for one Orbit program.
+const EXECUTION_TIMEOUT_MS = 5000;
+
 // Allow requests from the React IDE.
 app.use(cors());
 
@@ -71,6 +74,33 @@ app.post("/api/run", (req, res) => {
     let stdout = "";
     let stderr = "";
 
+    let timedOut = false;
+    let responseSent = false;
+
+    /*
+     * Stop the Orbit process if it runs longer than 5 seconds.
+     */
+    const timeout = setTimeout(() => {
+        if (responseSent) {
+            return;
+        }
+
+        timedOut = true;
+        responseSent = true;
+
+        // Kill the running Orbit process.
+        orbitProcess.kill("SIGKILL");
+
+        // Remove the temporary Orbit source file.
+        fs.unlink(tempFile, () => {});
+
+        return res.json({
+            success: false,
+            output: stdout,
+            error: "Time Limit Exceeded (5 seconds)."
+        });
+    }, EXECUTION_TIMEOUT_MS);
+
     // Collect normal program output.
     orbitProcess.stdout.on("data", (data) => {
         stdout += data.toString();
@@ -94,8 +124,17 @@ app.post("/api/run", (req, res) => {
     orbitProcess.stdin.end();
 
     orbitProcess.on("close", (exitCode) => {
+        clearTimeout(timeout);
+
         // Remove the temporary Orbit source file.
         fs.unlink(tempFile, () => {});
+
+        // Timeout handler already sent the response.
+        if (timedOut || responseSent) {
+            return;
+        }
+
+        responseSent = true;
 
         /*
          * Orbit runtime errors are currently written to stderr.
@@ -122,8 +161,16 @@ app.post("/api/run", (req, res) => {
     });
 
     orbitProcess.on("error", (error) => {
+        clearTimeout(timeout);
+
         // Remove the temporary Orbit source file.
         fs.unlink(tempFile, () => {});
+
+        if (responseSent) {
+            return;
+        }
+
+        responseSent = true;
 
         return res.json({
             success: false,

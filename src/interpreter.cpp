@@ -4,6 +4,129 @@
 #include <iostream>
 #include <variant>
 
+// Returns true when an expression contains a numeric value that
+// is fractional (for example 55.6) anywhere inside its AST.
+// This is used by the modulo operator so a decimal is rejected
+// before the modulo operation is performed.
+static bool containsDecimalValue(const Expr* expr)
+{
+    if (expr == nullptr)
+    {
+        return false;
+    }
+
+    // Numeric/string/char/bool literal.
+    if (auto literal = dynamic_cast<const Literal*>(expr))
+    {
+        if (literal->value.type == TokenType::NUMBER)
+        {
+            double value =
+                std::stod(literal->value.lexeme);
+
+            return std::floor(value) != value;
+        }
+
+        return false;
+    }
+
+    // Assignment expression.
+    if (auto assignment =
+            dynamic_cast<const Assignment*>(expr))
+    {
+        return containsDecimalValue(
+            assignment->value.get());
+    }
+
+    // Array element assignment expression.
+    if (auto indexAssignment =
+            dynamic_cast<const IndexAssignment*>(expr))
+    {
+        return containsDecimalValue(
+                   indexAssignment->object.get()) ||
+               containsDecimalValue(
+                   indexAssignment->index.get()) ||
+               containsDecimalValue(
+                   indexAssignment->value.get());
+    }
+
+    // Nebula array literal.
+    if (auto nebula =
+            dynamic_cast<const NebulaLiteral*>(expr))
+    {
+        for (const auto& element :
+             nebula->elements)
+        {
+            if (containsDecimalValue(element.get()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Array indexing.
+    if (auto indexExpr =
+            dynamic_cast<const IndexExpr*>(expr))
+    {
+        return containsDecimalValue(
+                   indexExpr->object.get()) ||
+               containsDecimalValue(
+                   indexExpr->index.get());
+    }
+
+    // Function call.
+    if (auto call =
+            dynamic_cast<const Call*>(expr))
+    {
+        if (containsDecimalValue(call->callee.get()))
+        {
+            return true;
+        }
+
+        for (const auto& argument :
+             call->arguments)
+        {
+            if (containsDecimalValue(argument.get()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Unary expression.
+    if (auto unary =
+            dynamic_cast<const Unary*>(expr))
+    {
+        return containsDecimalValue(
+            unary->right.get());
+    }
+
+    // Binary expression.
+    if (auto binary =
+            dynamic_cast<const Binary*>(expr))
+    {
+        return containsDecimalValue(
+                   binary->left.get()) ||
+               containsDecimalValue(
+                   binary->right.get());
+    }
+
+    // Grouping expression.
+    if (auto grouping =
+            dynamic_cast<const Grouping*>(expr))
+    {
+        return containsDecimalValue(
+            grouping->expression.get());
+    }
+
+    // Variable lookup does not contain a literal value
+    // in the AST. Its runtime value is checked later.
+    return false;
+}
+
 Interpreter::Interpreter()
     : functionDepth(0)
 {
@@ -346,6 +469,18 @@ Value Interpreter::evaluate(const Expr* expr)
     if (auto binary =
             dynamic_cast<const Binary*>(expr))
     {
+        // For modulo, reject any fractional numeric value anywhere
+        // inside either operand's AST before evaluating the modulo.
+        if (binary->op.type == TokenType::MODULO)
+        {
+            if (containsDecimalValue(binary->left.get()) ||
+                containsDecimalValue(binary->right.get()))
+            {
+                throw RuntimeError(
+                    "Operands of '%' must be integers");
+            }
+        }
+
         Value left =
             evaluate(binary->left.get());
 
@@ -434,11 +569,13 @@ Value Interpreter::evaluate(const Expr* expr)
         // -----------------------------------------------------
         // Modulo
         //
-        // fmod is used because Orbit numbers are represented
-        // as double, so both integer and decimal modulo work.
+        // Orbit's % operator is integer modulo.
+        // Any fractional value anywhere inside either operand
+        // has already been rejected by the AST check above.
         //
-        // 17 % 5     -> 2
-        // 10.5 % 3   -> 1.5
+        // 17 % 5       -> 2
+        // 10.0 % 3     -> 1
+        // 10.5 % 3     -> Runtime Error
         // -----------------------------------------------------
 
         case TokenType::MODULO:
@@ -450,8 +587,20 @@ Value Interpreter::evaluate(const Expr* expr)
                     "Operands of '%' must be numbers");
             }
 
+            double leftValue =
+                std::get<double>(left);
+
             double rightValue =
                 std::get<double>(right);
+
+            // Runtime check is required for values coming from
+            // variables, function calls, input, or other expressions.
+            if (std::floor(leftValue) != leftValue ||
+                std::floor(rightValue) != rightValue)
+            {
+                throw RuntimeError(
+                    "Operands of '%' must be integers");
+            }
 
             if (rightValue == 0)
             {
@@ -459,9 +608,15 @@ Value Interpreter::evaluate(const Expr* expr)
                     "Modulo by zero");
             }
 
-            return std::fmod(
-                std::get<double>(left),
-                rightValue);
+            // The actual modulo operation uses C++ integer %.
+            long long leftInteger =
+                static_cast<long long>(leftValue);
+
+            long long rightInteger =
+                static_cast<long long>(rightValue);
+
+            return static_cast<double>(
+                leftInteger % rightInteger);
         }
 
         // -----------------------------------------------------

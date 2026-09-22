@@ -1,36 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import "./App.css";
-
-function highlightOrbitCode(code) {
-  return code
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(
-      /(".*?")/g,
-      '<span class="syntax-string">$1</span>'
-    )
-    .replace(
-      /('.*?')/g,
-      '<span class="syntax-char">$1</span>'
-    )
-    .replace(
-      /\b(dock|transmit|receive|when|else|orbiting|nebula)\b/g,
-      '<span class="syntax-keyword">$1</span>'
-    )
-    .replace(
-      /\b(true|false)\b/g,
-      '<span class="syntax-boolean">$1</span>'
-    )
-    .replace(
-      /\b\d+(\.\d+)?\b/g,
-      '<span class="syntax-number">$&</span>'
-    )
-    .replace(
-      /(\/\/.*$|comet:.*?burn)/gm,
-      '<span class="syntax-comment">$1</span>'
-    );
-}
 
 /*
  * Orbit documentation.
@@ -921,7 +890,100 @@ B`,
   },
 
   {
-    title: "29. Operator Summary",
+    title: "29. Decimal and Double Values",
+    content: [
+      { type: "text", value: "Orbit stores numeric values as double-precision numbers. This means you can use both whole numbers and decimal values in calculations." },
+      { type: "code", value: `dock price = 99.99;
+dock temperature = 25.5;
+
+transmit(price);
+transmit(temperature);` },
+      { type: "result", value: `99.99
+25.5` },
+      { type: "text", value: "Decimal values can also be used directly in arithmetic expressions and comparisons." },
+      { type: "code", value: `transmit(10.5 + 2.5);
+transmit(10.0 / 4.0);` },
+      { type: "result", value: `13
+2.5` },
+    ],
+  },
+
+  {
+    title: "30. Two-Dimensional Nebula Arrays",
+    content: [
+      { type: "text", value: "Nebula arrays can contain other nebula arrays. This allows Orbit to represent two-dimensional data such as matrices or tables." },
+      { type: "code", value: `nebula matrix = [
+    [1.5, 2.5],
+    [3.5, 4.5]
+];
+
+transmit(matrix[0][1]);
+transmit(matrix[1][0]);` },
+      { type: "result", value: `2.5
+3.5` },
+      { type: "text", value: "The first index selects the row and the second index selects the value inside that row. Orbit uses zero-based indexing." },
+      { type: "operator", items: [
+        "matrix[0][0] → 1.5",
+        "matrix[0][1] → 2.5",
+        "matrix[1][0] → 3.5",
+        "matrix[1][1] → 4.5",
+      ] },
+    ],
+  },
+
+  {
+    title: "31. Nested and Multidimensional Nebulas",
+    content: [
+      { type: "text", value: "Nebula arrays can be nested to more than two levels. Indexing can therefore be chained to access values at any supported depth." },
+      { type: "code", value: `nebula cube = [
+    [
+        [1, 2],
+        [3, 4]
+    ],
+    [
+        [5, 6],
+        [7, 8]
+    ]
+];
+
+transmit(cube[1][0][1]);` },
+      { type: "result", value: `6` },
+      { type: "text", value: "Nested arrays can also be modified through chained indexing." },
+      { type: "code", value: `cube[0][1][0] = 99;
+
+transmit(cube);` },
+      { type: "result", value: `[[[1, 2], [99, 4]], [[5, 6], [7, 8]]]` },
+      { type: "tip", value: "Every additional [index] moves one level deeper into the nested nebula." },
+    ],
+  },
+
+  {
+    title: "32. New Array Features",
+    content: [
+      { type: "text", value: "Orbit's nebula system now supports nested arrays, multidimensional indexing, chained indexed assignment, decimal values, and recursive array printing." },
+      { type: "breakdown", items: [
+        "2D arrays such as [[1, 2], [3, 4]].",
+        "Deeper nested arrays such as 3D cubes.",
+        "Chained indexing such as matrix[0][1].",
+        "Chained indexed assignment such as matrix[1][0] = 99.",
+        "Decimal values inside arrays such as [1.5, 2.5].",
+        "Nested arrays are printed recursively in their original structure.",
+      ] },
+      { type: "code", label: "Complete example", value: `nebula matrix = [
+    [1.5, 2.5],
+    [3.5, 4.5]
+];
+
+transmit(matrix[0][1]);
+matrix[1][0] = 99.5;
+transmit(matrix);` },
+      { type: "result", value: `2.5
+[[1.5, 2.5], [99.5, 4.5]]` },
+    ],
+  },
+
+  {
+    title: "33. Operator Summary",
     content: [
       {
         type: "operator",
@@ -962,7 +1024,7 @@ B`,
   },
 
   {
-    title: "30. Common Beginner Mistakes",
+    title: "34. Common Beginner Mistakes",
     content: [
       {
         type: "mistake",
@@ -1000,7 +1062,7 @@ transmit(numbers[5]);`,
   },
 
   {
-    title: "31. Understanding Errors",
+    title: "35. Understanding Errors",
     content: [
       {
         type: "text",
@@ -1043,7 +1105,7 @@ dock age = ;`,
   },
 
   {
-    title: "32. Complete Example",
+    title: "36. Complete Example",
     content: [
       {
         type: "text",
@@ -1072,6 +1134,98 @@ when (age >= 18) {
     ],
   },
 ];
+
+
+// Escape text is handled safely by React itself. This function only splits
+// Orbit source into token types so the visual layer can color them.
+function highlightOrbitCode(source) {
+  const tokenPattern = new RegExp(
+    String.raw`(comet:[\s\S]*?burn|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:dock|transmit|receive|when|else|orbiting|nebula|true|false)\b|\b\d+(?:\.\d+)?\b|==|!=|<=|>=|&&|\|\||[+\-*/=<>!])`,
+    "g"
+  );
+
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = tokenPattern.exec(source)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({
+        type: "plain",
+        value: source.slice(lastIndex, match.index),
+      });
+    }
+
+    const token = match[0];
+    let type = "operator";
+
+    if (token.startsWith("comet:")) {
+      type = "comment";
+    } else if (token.startsWith('"')) {
+      type = "string";
+    } else if (token.startsWith("'")) {
+      type = "char";
+    } else if ( /^(dock|transmit|receive|when|else|orbiting|nebula)$/.test(token)) {
+      type = "keyword";
+    } else if ( /^(true|false)$/.test(token)) {
+      type = "boolean";
+    } else if (/^\d+(?:\.\d+)?$/.test(token)) {
+      type = "number";
+    }
+
+    parts.push({ type, value: token });
+    lastIndex = tokenPattern.lastIndex;
+  }
+
+  if (lastIndex < source.length) {
+    parts.push({
+      type: "plain",
+      value: source.slice(lastIndex),
+    });
+  }
+
+  const tokenColors = {
+    keyword: "#6ee7f9",
+    number: "#f6c85f",
+    string: "#8be9a8",
+    char: "#7dd3fc",
+    comment: "#7f8ca3",
+    boolean: "#c084fc",
+    operator: "#a7cbff",
+    plain: "#dce8ff",
+  };
+
+  return parts.map((part, index) => (
+    <span
+      key={`${part.type}-${index}`}
+      style={{
+        color: tokenColors[part.type],
+        font: "inherit",
+        fontFamily: "inherit",
+        fontSize: "inherit",
+        fontWeight: "inherit",
+        lineHeight: "inherit",
+        letterSpacing: "inherit",
+        wordSpacing: "inherit",
+        fontKerning: "inherit",
+        fontVariantLigatures: "inherit",
+        fontFeatureSettings: "inherit",
+        fontSynthesis: "inherit",
+      }}
+    >
+      {part.value}
+    </span>
+  ));
+}
+
+function HighlightedCode({ value, className = "" }) {
+  return (
+    <pre className={className}>
+      <code>{highlightOrbitCode(value)}</code>
+    </pre>
+  );
+}
+
 
 function Documentation({ onClose }) {
   return (
@@ -1126,9 +1280,7 @@ function Documentation({ onClose }) {
                       </div>
                     )}
 
-                    <pre>
-                      {item.value}
-                    </pre>
+                    <HighlightedCode value={item.value} />
                   </div>
                 );
               }
@@ -1227,12 +1379,12 @@ function Documentation({ onClose }) {
 
                     <div>
                       <strong>Incorrect</strong>
-                      <pre>{item.wrong}</pre>
+                      <HighlightedCode value={item.wrong} />
                     </div>
 
                     <div>
                       <strong>Correct</strong>
-                      <pre>{item.correct}</pre>
+                      <HighlightedCode value={item.correct} />
                     </div>
                   </div>
                 );
@@ -1260,12 +1412,71 @@ transmit(message);`);
     "Orbit engine ready. Write your program and launch it."
   );
 
+  const [outputError, setOutputError] = useState(false);
+
   const [showDocs, setShowDocs] = useState(false);
+
+  // The line-number rail never scrolls independently. Its contents are
+  // translated to exactly match the textarea scroll position.
+  const lineNumbersContentRef = useRef(null);
+  const highlightContentRef = useRef(null);
+
+  const [outputSuccess, setOutputSuccess] = useState(false);
 
   const lines = code.split("\n");
 
+  // The textarea is the only scrolling element.
+  // Moving the line-number content by the same amount keeps both layers
+  // locked together without maintaining a second scroll position.
+  const handleEditorScroll = (event) => {
+    const scrollTop = event.currentTarget.scrollTop;
+    const scrollLeft = event.currentTarget.scrollLeft;
+
+    if (lineNumbersContentRef.current) {
+      lineNumbersContentRef.current.style.transform =
+        `translateY(-${scrollTop}px)`;
+    }
+
+    if (highlightContentRef.current) {
+      highlightContentRef.current.style.transform =
+        `translate(-${scrollLeft}px, -${scrollTop}px)`;
+    }
+  };
+
+  // Update the code from the native textarea.
+  const handleEditorChange = (event) => {
+    setCode(event.target.value);
+  };
+
+  // Keep Tab useful inside the code editor while preserving normal
+  // textarea behavior for Enter, arrows, selection, copy and paste.
+  const handleKeyDown = (event) => {
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const editor = event.currentTarget;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const nextCode =
+      code.slice(0, start) +
+      "    " +
+      code.slice(end);
+
+    setCode(nextCode);
+
+    requestAnimationFrame(() => {
+      editor.selectionStart = start + 4;
+      editor.selectionEnd = start + 4;
+    });
+  };
+
   // Send Orbit code and browser input to the backend.
   const runCode = async () => {
+    setOutputError(false);
+    setOutputSuccess(false);
     setOutput("✦ Launching Orbit program...\n");
 
     try {
@@ -1288,18 +1499,26 @@ transmit(message);`);
       const result = await response.json();
 
       if (result.success) {
+        setOutputError(false);
+        setOutputSuccess(true);
+
         setOutput(
           "✓ Orbit program executed successfully.\n\n" +
             result.output
         );
       } else {
+        setOutputError(true);
+        setOutputSuccess(false);
+
         setOutput(
           "⚠ Orbit execution failed.\n\n" +
             (result.error || "Unknown error")
         );
       }
-
     } catch (error) {
+      setOutputError(true);
+      setOutputSuccess(false);
+
       setOutput(
         "⚠ Unable to connect to Orbit server.\n\n" +
           error.message
@@ -1307,27 +1526,6 @@ transmit(message);`);
     }
   };
 
-  // Add four spaces when Tab is pressed.
-  const handleKeyDown = (event) => {
-    if (event.key === "Tab") {
-      event.preventDefault();
-
-      const start = event.target.selectionStart;
-      const end = event.target.selectionEnd;
-
-      const newCode =
-        code.substring(0, start) +
-        "    " +
-        code.substring(end);
-
-      setCode(newCode);
-
-      requestAnimationFrame(() => {
-        event.target.selectionStart = start + 4;
-        event.target.selectionEnd = start + 4;
-      });
-    }
-  };
 
   return (
     <div className="orbit-app">
@@ -1394,39 +1592,101 @@ transmit(message);`);
 
           <div className="editor-container">
 
-            {/* Line numbers */}
+            {/* Line numbers.
+                The outer rail is fixed. Only this inner list moves when
+                the textarea scrolls. */}
             <div className="line-numbers">
-
-              {lines.map((_, index) => (
-                <div key={index}>
-                  {index + 1}
-                </div>
-              ))}
-
+              <span
+                ref={lineNumbersContentRef}
+                className="line-numbers-content"
+                style={{
+                  display: "block",
+                  willChange: "transform",
+                }}
+              >
+                {lines.map((_, index) => (
+                  <div key={index}>
+                    {index + 1}
+                  </div>
+                ))}
+              </span>
             </div>
 
-            {/* Syntax highlighted code */}
+            {/* Visual syntax layer. The textarea remains the real editor. */}
             <pre
-              className="highlight-layer"
               aria-hidden="true"
-              dangerouslySetInnerHTML={{
-                __html:
-                  highlightOrbitCode(code) +
-                  "\n",
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "58px",
+                width: "calc(100% - 58px)",
+                height: "100%",
+                margin: 0,
+                padding: "24px 25px",
+                boxSizing: "border-box",
+                overflow: "hidden",
+                pointerEvents: "none",
+                background: "transparent",
+                fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: "25px",
+                letterSpacing: "0",
+                wordSpacing: "0",
+                fontKerning: "none",
+                fontVariantLigatures: "none",
+                fontFeatureSettings: '"liga" 0, "clig" 0, "calt" 0',
+                fontSynthesis: "none",
+                textRendering: "geometricPrecision",
+                whiteSpace: "pre",
+                zIndex: 1,
               }}
-            />
+            >
+              <code
+                ref={highlightContentRef}
+                style={{
+                  display: "block",
+                  width: "max-content",
+                  margin: 0,
+                  padding: 0,
+                  transform: "translate(0, 0)",
+                  willChange: "transform",
+                }}
+              >
+                {highlightOrbitCode(code)}
+              </code>
+            </pre>
 
-            {/* Actual editor */}
+            {/* Native textarea editor.
+                This remains the real interactive layer so normal browser
+                editing behavior is preserved. */}
             <textarea
               className="code-editor"
               value={code}
-              onChange={(event) =>
-                setCode(event.target.value)
-              }
+              onChange={handleEditorChange}
               onKeyDown={handleKeyDown}
+              onScroll={handleEditorScroll}
               spellCheck="false"
               autoCapitalize="off"
               autoCorrect="off"
+              wrap="off"
+              style={{
+                color: "transparent",
+                WebkitTextFillColor: "transparent",
+                background: "transparent",
+                fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: "25px",
+                letterSpacing: "0",
+                wordSpacing: "0",
+                fontKerning: "none",
+                fontVariantLigatures: "none",
+                fontFeatureSettings: '"liga" 0, "clig" 0, "calt" 0',
+                fontSynthesis: "none",
+                textRendering: "geometricPrecision",
+              }}
+              aria-label="Orbit code editor"
             />
 
           </div>
@@ -1455,8 +1715,22 @@ transmit(message);`);
 
           </div>
 
-          <pre className="output">
-            {output}
+          <pre
+            className={`output ${
+              outputError ? "output-error" : ""
+            }`}
+          >
+            {outputSuccess ? (
+              <>
+                <span style={{ color: "#62e69a", fontWeight: 600 }}>
+                  ✓ Orbit program executed successfully.
+                </span>
+                {"\n\n"}
+                {output.replace("✓ Orbit program executed successfully.\n\n", "")}
+              </>
+            ) : (
+              output
+            )}
           </pre>
 
         </section>

@@ -8,6 +8,14 @@
 }
 
 :root {
+  --syntax-keyword: #6ee7f9;
+  --syntax-number: #f6c85f;
+  --syntax-string: #8be9a8;
+  --syntax-char: #7dd3fc;
+  --syntax-comment: #7f8ca3;
+  --syntax-boolean: #c084fc;
+  --syntax-operator: #a7cbff;
+
   font-family:
     Inter,
     system-ui,
@@ -416,36 +424,6 @@ body {
    CODE EDITOR
    ========================================================= */
 
-.code-editor {
-  width: 100%;
-  height: calc(100% - 46px);
-
-  display: block;
-
-  padding: 24px 25px;
-
-  resize: none;
-  outline: none;
-  border: none;
-
-  background: transparent;
-
-  color: #dce8ff;
-
-  font-family:
-    "JetBrains Mono",
-    "Fira Code",
-    Consolas,
-    monospace;
-
-  font-size: 14px;
-  line-height: 1.8;
-
-  caret-color: #a7cbff;
-
-  tab-size: 4;
-}
-
 .code-editor::selection {
   background: rgba(100, 150, 255, 0.25);
 }
@@ -591,6 +569,11 @@ body {
   line-height: 1.7;
 
   white-space: pre-wrap;
+}
+
+.output-error {
+  color: #ff5f6d;
+  text-shadow: 0 0 8px rgba(255, 70, 90, 0.18);
 }
 
 /* =========================================================
@@ -860,9 +843,7 @@ body,
 
 .editor-container {
   position: relative;
-
   height: calc(100% - 46px);
-
   overflow: hidden;
 
   background:
@@ -878,7 +859,6 @@ body,
 
 .line-numbers {
   position: absolute;
-
   top: 0;
   left: 0;
 
@@ -886,14 +866,14 @@ body,
   height: 100%;
 
   padding-top: 24px;
+  padding-right: 15px;
 
   overflow: hidden;
 
-  background: rgba(5, 11, 25, 0.55);
+  background: rgba(8, 16, 34, 0.78);
+  border-right: 1px solid rgba(130, 170, 240, 0.16);
 
-  border-right: 1px solid rgba(120, 150, 210, 0.08);
-
-  color: #3f506d;
+  color: #6ee7f9;
 
   font-family:
     "JetBrains Mono",
@@ -902,61 +882,23 @@ body,
     monospace;
 
   font-size: 13px;
-
   line-height: 1.8;
 
   text-align: right;
-  padding-right: 15px;
-
   user-select: none;
 
   z-index: 3;
+
+  text-shadow:
+    0 0 8px rgba(100, 160, 255, 0.18);
 }
 
 .line-numbers div {
   height: 25px;
 }
 
-/* Syntax highlighted layer */
-
-.highlight-layer {
-  display: none;
-  position: absolute;
-
-  top: 0;
-  left: 58px;
- 
-  width: calc(100% - 58px);
-  height: 100%;
-
-  margin: 0;
-
-  padding: 24px 25px;
-
-  overflow: hidden;
-
-  pointer-events: none;
-
-  white-space: pre;
-
-  color: #dce8ff;
-
-  font-family:
-    "JetBrains Mono",
-    "Fira Code",
-    Consolas,
-    monospace;
-
-  font-size: 14px;
-
-  line-height: 1.8;
-
-  tab-size: 4;
-
-  z-index: 1;
-}
-
-/* Actual textarea */
+/* Actual editor.
+   One element only: no overlay and no highlight layer. */
 
 .code-editor {
   position: absolute;
@@ -970,7 +912,6 @@ body,
   margin: 0;
   padding: 24px 25px;
 
-  resize: none;
   outline: none;
   border: none;
 
@@ -988,15 +929,57 @@ body,
   font-size: 14px;
   font-weight: 400;
 
-  line-height: 1.8;
-
+  line-height: 25px;
   tab-size: 4;
 
   white-space: pre;
-
   overflow: auto;
+  overflow-anchor: none;
+
+  cursor: text;
+  user-select: text;
 
   z-index: 2;
+}
+
+.code-editor::selection {
+  background: rgba(100, 150, 255, 0.25);
+}
+
+.code-editor:focus {
+  box-shadow:
+    inset 0 0 30px rgba(60, 100, 180, 0.035);
+}
+
+/* Orbit syntax colors */
+
+.syntax-keyword {
+  color: var(--syntax-keyword);
+}
+
+.syntax-number {
+  color: var(--syntax-number);
+}
+
+.syntax-string {
+  color: var(--syntax-string);
+}
+
+.syntax-char {
+  color: var(--syntax-char);
+}
+
+.syntax-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+
+.syntax-boolean {
+  color: var(--syntax-boolean);
+}
+
+.syntax-operator {
+  color: var(--syntax-operator);
 }
 
 /* Program input panel */
@@ -1068,3 +1051,9 @@ body,
 .program-input:focus {
   box-shadow: inset 0 0 0 1px rgba(80, 200, 255, 0.35);
 }
+
+/* Number syntax highlighting */
+
+.syntax-number {
+  color: #f6c85f;
+} 

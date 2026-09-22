@@ -54,6 +54,11 @@ void Lexer::identifier()
         word += advance();
     }
 
+    // Orbit comments use:
+    //
+    // comet: comment text burn
+    //
+    // The entire comment is ignored.
     if (word == "comet" && peek() == ':')
     {
         advance();
@@ -310,9 +315,29 @@ void Lexer::number()
 {
     std::string value;
 
+    // Read the integer part.
     while (isDigit(peek()))
     {
         value += advance();
+    }
+
+    // Read the decimal part if a dot is
+    // followed by at least one digit.
+    //
+    // Examples:
+    // 25.5
+    // 99.99
+    // 0.5
+    if (peek() == '.' &&
+        current + 1 < source.length() &&
+        isDigit(source[current + 1]))
+    {
+        value += advance();
+
+        while (isDigit(peek()))
+        {
+            value += advance();
+        }
     }
 
     tokens.push_back(
@@ -416,54 +441,56 @@ void Lexer::charLiteral()
 
 void Lexer::skipComment()
 {
+    // Orbit comments can span multiple lines.
+    //
+    // Example:
+    //
+    // comet:
+    // This program stores an age
+    // The comment helps explain the code
+    // burn
+    //
+    // Everything between "comet:" and the standalone
+    // word "burn" is ignored by the lexer.
+
     while (!isAtEnd())
     {
-        // Skip spaces and other whitespace before the next word.
-        while (!isAtEnd() &&
-               (peek() == ' ' ||
-                peek() == '\t' ||
-                peek() == '\r'))
+        // Preserve correct source line numbers.
+        if (peek() == '\n')
         {
-            advance();
-        }
-
-        // Read the next word.
-        std::string word;
-
-        while (!isAtEnd() && isAlphaNumeric(peek()))
-        {
-            word += advance();
-        }
-
-        // If the word is "burn", the comment is finished.
-        if (word == "burn")
-        {
-            return;
-        }
-
-        // Ignore other characters inside the comment.
-        if (!isAtEnd() && peek() != '\n')
-        {
-            advance();
-        }
-
-        // If the comment reaches a new line without "burn",
-        // report an unterminated comment.
-        if (!isAtEnd() && peek() == '\n')
-        {
-            std::cerr
-                << "Lexer Error: Unterminated comment at line "
-                << line
-                << std::endl;
-
             advance();
             line++;
-
-            return;
+            continue;
         }
+
+        // Read complete words so that:
+        //
+        // burn     -> ends the comment
+        // burned   -> remains comment text
+        //
+        if (isAlpha(peek()))
+        {
+            std::string word;
+
+            while (!isAtEnd() && isAlphaNumeric(peek()))
+            {
+                word += advance();
+            }
+
+            if (word == "burn")
+            {
+                return;
+            }
+
+            continue;
+        }
+
+        // Ignore spaces, punctuation, numbers and
+        // every other character inside the comment.
+        advance();
     }
 
-    // Reached the end of the source without finding "burn".
+    // Reached EOF without finding "burn".
     std::cerr
         << "Lexer Error: Unterminated comment at line "
         << line

@@ -1013,7 +1013,7 @@ void Interpreter::execute(const Stmt* stmt)
             Value target =
                 lookup(variable->name.lexeme);
 
-            std::cout << "Enter value: ";
+            //std::cout << "Enter value: ";
 
             if (std::holds_alternative<double>(target))
             {
@@ -1143,7 +1143,7 @@ void Interpreter::execute(const Stmt* stmt)
                 array->elements[
                     static_cast<size_t>(indexValue)];
 
-            std::cout << "Enter value: ";
+            //std::cout << "Enter value: ";
 
             if (std::holds_alternative<double>(target))
             {

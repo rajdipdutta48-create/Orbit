@@ -16,6 +16,8 @@ enum class TokenType
     ELSE,
     ORBITING,
     NEBULA,
+    WARP,
+    RETURN,
 
     // Identifiers and literals
     IDENTIFIER,
@@ -28,6 +30,7 @@ enum class TokenType
     MINUS,
     STAR,
     SLASH,
+    MODULO,
     EQUAL,
     EQUAL_EQUAL,
     NOT_EQUAL,

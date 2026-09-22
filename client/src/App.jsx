@@ -425,6 +425,7 @@ transmit(age);`,
           "-  → subtraction",
           "*  → multiplication",
           "/  → division",
+          "%  → modulo (remainder)",
         ],
       },
       {
@@ -983,7 +984,145 @@ transmit(matrix);` },
   },
 
   {
-    title: "33. Operator Summary",
+    title: "33. Modulo Operator",
+    content: [
+      {
+        type: "text",
+        value:
+          "The % operator returns the remainder after one number is divided by another.",
+      },
+      {
+        type: "code",
+        value: `transmit(17 % 5);
+transmit(20 % 6);
+transmit(10.5 % 3);`,
+      },
+      {
+        type: "result",
+        value: `2
+2
+1.5`,
+      },
+      {
+        type: "text",
+        value:
+          "Modulo has the same precedence as multiplication and division and is evaluated from left to right.",
+      },
+      {
+        type: "code",
+        value: `dock value = 17;
+transmit(value % 5);`,
+      },
+      {
+        type: "result",
+        value: `2`,
+      },
+      {
+        type: "warning",
+        value: "The right-hand operand of % cannot be zero.",
+      },
+    ],
+  },
+
+  {
+    title: "34. warp Functions",
+    content: [
+      {
+        type: "text",
+        value:
+          "A warp defines a reusable function. It can accept parameters and execute a block of Orbit statements.",
+      },
+      {
+        type: "code",
+        value: `warp greet(name) {
+    transmit(name);
+}
+
+greet("Orbit");`,
+      },
+      {
+        type: "result",
+        value: `Orbit`,
+      },
+      {
+        type: "text",
+        value:
+          "Parameters are names written inside the parentheses. Arguments are the values supplied when the function is called.",
+      },
+      {
+        type: "code",
+        value: `warp add(a, b) {
+    return a + b;
+}
+
+dock result = add(10, 20);
+transmit(result);`,
+      },
+      {
+        type: "result",
+        value: `30`,
+      },
+      {
+        type: "tip",
+        value:
+          "A function can be called multiple times, and each call gets its own parameter values and local scope.",
+      },
+    ],
+  },
+
+  {
+    title: "35. return Statements",
+    content: [
+      {
+        type: "text",
+        value:
+          "Use return to stop the current warp and send a value back to the caller.",
+      },
+      {
+        type: "code",
+        value: `warp square(n) {
+    return n * n;
+}
+
+dock answer = square(7);
+transmit(answer);`,
+      },
+      {
+        type: "result",
+        value: `49`,
+      },
+      {
+        type: "text",
+        value:
+          "A warp can also use return without a value. Return is only valid inside a warp function.",
+      },
+      {
+        type: "code",
+        value: `warp countdown(n) {
+    when (n > 0) {
+        transmit(n);
+        return countdown(n - 1);
+    }
+}
+
+countdown(3);`,
+      },
+      {
+        type: "result",
+        value: `3
+2
+1`,
+      },
+      {
+        type: "tip",
+        value:
+          "Warp functions can call other warp functions, including themselves, which allows recursion.",
+      },
+    ],
+  },
+
+  {
+    title: "36. Operator Summary",
     content: [
       {
         type: "operator",
@@ -1024,7 +1163,7 @@ transmit(matrix);` },
   },
 
   {
-    title: "34. Common Beginner Mistakes",
+    title: "37. Common Beginner Mistakes",
     content: [
       {
         type: "mistake",
@@ -1062,7 +1201,7 @@ transmit(numbers[5]);`,
   },
 
   {
-    title: "35. Understanding Errors",
+    title: "38. Understanding Errors",
     content: [
       {
         type: "text",
@@ -1105,7 +1244,7 @@ dock age = ;`,
   },
 
   {
-    title: "36. Complete Example",
+    title: "39. Complete Example",
     content: [
       {
         type: "text",
@@ -1140,7 +1279,7 @@ when (age >= 18) {
 // Orbit source into token types so the visual layer can color them.
 function highlightOrbitCode(source) {
   const tokenPattern = new RegExp(
-    String.raw`(comet:[\s\S]*?burn|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:dock|transmit|receive|when|else|orbiting|nebula|true|false)\b|\b\d+(?:\.\d+)?\b|==|!=|<=|>=|&&|\|\||[+\-*/=<>!])`,
+    String.raw`(comet:[\s\S]*?burn|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:dock|transmit|receive|when|else|orbiting|nebula|warp|return|true|false)\b|\b\d+(?:\.\d+)?\b|==|!=|<=|>=|&&|\|\||[+\-*/%=<>!])`,
     "g"
   );
 
@@ -1165,9 +1304,11 @@ function highlightOrbitCode(source) {
       type = "string";
     } else if (token.startsWith("'")) {
       type = "char";
-    } else if ( /^(dock|transmit|receive|when|else|orbiting|nebula)$/.test(token)) {
+    } else if (/^(warp|return)$/.test(token)) {
+      type = "functionKeyword";
+    } else if (/^(dock|transmit|receive|when|else|orbiting|nebula)$/.test(token)) {
       type = "keyword";
-    } else if ( /^(true|false)$/.test(token)) {
+    } else if (/^(true|false)$/.test(token)) {
       type = "boolean";
     } else if (/^\d+(?:\.\d+)?$/.test(token)) {
       type = "number";
@@ -1191,6 +1332,7 @@ function highlightOrbitCode(source) {
     char: "#7dd3fc",
     comment: "#7f8ca3",
     boolean: "#c084fc",
+    functionKeyword: "#ff8bd4",
     operator: "#a7cbff",
     plain: "#dce8ff",
   };

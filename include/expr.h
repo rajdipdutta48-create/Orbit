@@ -102,6 +102,9 @@ public:
 
 // Represents:
 // [10, 20, 30]
+//
+// Elements are expressions, which means nested
+// nebula arrays are supported.
 class NebulaLiteral : public Expr
 {
 public:
@@ -109,6 +112,24 @@ public:
 
     NebulaLiteral(
         std::vector<std::unique_ptr<Expr>> elements);
+};
+
+// Represents a function call:
+//
+// greet();
+// add(10, 20);
+//
+// The callee is normally a Variable expression,
+// while arguments can be any Orbit expressions.
+class Call : public Expr
+{
+public:
+    std::unique_ptr<Expr> callee;
+    std::vector<std::unique_ptr<Expr>> arguments;
+
+    Call(
+        std::unique_ptr<Expr> callee,
+        std::vector<std::unique_ptr<Expr>> arguments);
 };
 
 // Base class for all Orbit statements.
@@ -154,6 +175,7 @@ public:
 
 // Represents a standalone expression:
 // 20 + 30;
+// add(10, 20);
 class ExpressionStmt : public Stmt
 {
 public:
@@ -208,6 +230,42 @@ public:
     WhileStmt(
         std::unique_ptr<Expr> condition,
         std::vector<std::unique_ptr<Stmt>> body);
+};
+
+// Represents a function declaration:
+//
+// warp greet(name) {
+//     transmit(name);
+// }
+//
+// Parameters are stored as tokens so the interpreter
+// can bind argument values to parameter names.
+class FunctionStmt : public Stmt
+{
+public:
+    Token name;
+    std::vector<Token> params;
+    std::vector<std::unique_ptr<Stmt>> body;
+
+    FunctionStmt(
+        const Token& name,
+        std::vector<Token> params,
+        std::vector<std::unique_ptr<Stmt>> body);
+};
+
+// Represents:
+//
+// return value;
+// return;
+//
+// A function may return an expression or return
+// without a value.
+class ReturnStmt : public Stmt
+{
+public:
+    std::unique_ptr<Expr> value;
+
+    ReturnStmt(std::unique_ptr<Expr> value);
 };
 
 #endif

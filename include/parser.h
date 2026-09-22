@@ -24,24 +24,61 @@ private:
 
     // Expression parsing
     std::unique_ptr<Expr> primary();
+
+    // Function calls:
+    // greet()
+    // add(10, 20)
+    // add(x, y * 2)
+    std::unique_ptr<Expr> call();
+
+    // Parses the argument list after a function name.
+    std::unique_ptr<Expr> finishCall(
+        std::unique_ptr<Expr> callee);
+
     std::unique_ptr<Expr> unary();
+
+    // Arithmetic precedence:
+    //
+    // factor -> *, /, %
+    // term   -> +, -
     std::unique_ptr<Expr> factor();
     std::unique_ptr<Expr> term();
+
     std::unique_ptr<Expr> comparison();
     std::unique_ptr<Expr> equality();
     std::unique_ptr<Expr> logicalAnd();
     std::unique_ptr<Expr> logicalOr();
+
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> expression();
 
     // Statement parsing
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> declaration();
+
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> nebulaDeclaration();
     std::unique_ptr<Stmt> printStatement();
     std::unique_ptr<Stmt> inputStatement();
     std::unique_ptr<Stmt> expressionStatement();
+
+    // Function declarations
+    //
+    // warp greet() {
+    //     transmit("Hello");
+    // }
+    //
+    // warp add(a, b) {
+    //     return a + b;
+    // }
+    std::unique_ptr<Stmt> warpDeclaration();
+
+    // Return statements
+    //
+    // return;
+    // return value;
+    // return expression;
+    std::unique_ptr<Stmt> returnStatement();
 
     // Control flow
     std::unique_ptr<Stmt> whenStatement();
@@ -51,8 +88,12 @@ private:
     std::vector<std::unique_ptr<Stmt>> block();
 
     // Parses array indexing:
+    //
     // numbers[0]
-    std::unique_ptr<Expr> finishIndexing(std::unique_ptr<Expr> object);
+    // matrix[0][1]
+    // cube[1][0][1]
+    std::unique_ptr<Expr> finishIndexing(
+        std::unique_ptr<Expr> object);
 
 public:
     Parser(const std::vector<Token>& tokens);

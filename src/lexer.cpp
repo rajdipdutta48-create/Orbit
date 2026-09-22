@@ -18,6 +18,10 @@ Lexer::Lexer(const std::string &source)
     keywords["else"] = TokenType::ELSE;
     keywords["orbiting"] = TokenType::ORBITING;
     keywords["nebula"] = TokenType::NEBULA;
+
+    // Function-related keywords.
+    keywords["warp"] = TokenType::WARP;
+    keywords["return"] = TokenType::RETURN;
 }
 
 bool Lexer::isAtEnd()
@@ -104,6 +108,11 @@ void Lexer::scanToken()
     case '/':
         tokens.push_back(
             Token(TokenType::SLASH, "/", line));
+        break;
+
+    case '%':
+        tokens.push_back(
+            Token(TokenType::MODULO, "%", line));
         break;
 
     case '=':

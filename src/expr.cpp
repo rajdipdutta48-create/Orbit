@@ -62,6 +62,14 @@ NebulaLiteral::NebulaLiteral(
 {
 }
 
+Call::Call(
+    std::unique_ptr<Expr> callee,
+    std::vector<std::unique_ptr<Expr>> arguments)
+    : callee(std::move(callee)),
+      arguments(std::move(arguments))
+{
+}
+
 VarStmt::VarStmt(const Token& name,
                  std::unique_ptr<Expr> initializer)
     : name(name),
@@ -106,5 +114,21 @@ WhileStmt::WhileStmt(
     std::vector<std::unique_ptr<Stmt>> body)
     : condition(std::move(condition)),
       body(std::move(body))
+{
+}
+
+FunctionStmt::FunctionStmt(
+    const Token& name,
+    std::vector<Token> params,
+    std::vector<std::unique_ptr<Stmt>> body)
+    : name(name),
+      params(std::move(params)),
+      body(std::move(body))
+{
+}
+
+ReturnStmt::ReturnStmt(
+    std::unique_ptr<Expr> value)
+    : value(std::move(value))
 {
 }

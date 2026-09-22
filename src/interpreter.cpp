@@ -1,37 +1,92 @@
 #include "../include/interpreter.h"
-#include <variant>
+
 #include <cmath>
+#include <iostream>
+#include <variant>
+
+Interpreter::Interpreter()
+    : functionDepth(0)
+{
+    // The first environment is always the global scope.
+    environments.emplace_back();
+}
+
+Value Interpreter::lookup(const std::string& name)
+{
+    // Search from the innermost scope to the global scope.
+    for (auto it = environments.rbegin();
+         it != environments.rend();
+         ++it)
+    {
+        auto found = it->find(name);
+
+        if (found != it->end())
+        {
+            return found->second;
+        }
+    }
+
+    throw RuntimeError(
+        "Undefined variable '" + name + "'");
+}
+
+void Interpreter::assign(
+    const std::string& name,
+    const Value& value)
+{
+    // Assignment searches from the innermost scope
+    // outward so local variables and parameters can
+    // be changed without affecting unrelated scopes.
+    for (auto it = environments.rbegin();
+         it != environments.rend();
+         ++it)
+    {
+        auto found = it->find(name);
+
+        if (found != it->end())
+        {
+            found->second = value;
+            return;
+        }
+    }
+
+    throw RuntimeError(
+        "Undefined variable '" + name + "'");
+}
+
+void Interpreter::define(
+    const std::string& name,
+    const Value& value)
+{
+    // New variables belong to the current scope.
+    environments.back()[name] = value;
+}
 
 Value Interpreter::evaluate(const Expr* expr)
 {
-    // Evaluate a literal.
-    //
-    // Supported:
-    // - numbers
-    // - strings
-    // - chars
-    // - true
-    // - false
-    if (auto literal = dynamic_cast<const Literal*>(expr))
+    if (expr == nullptr)
+    {
+        throw RuntimeError("Invalid expression");
+    }
+
+    // ---------------------------------------------------------
+    // Literal
+    // ---------------------------------------------------------
+
+    if (auto literal =
+            dynamic_cast<const Literal*>(expr))
     {
         if (literal->value.type == TokenType::NUMBER)
         {
-            return std::stod(literal->value.lexeme);
+            return std::stod(
+                literal->value.lexeme);
         }
 
-        // String literal.
-        //
-        // Example:
-        // "Orbit"
         if (literal->value.type == TokenType::STRING)
         {
             return literal->value.lexeme;
         }
 
-        // Character literal.
-        //
-        // Example:
-        // 'A'
         if (literal->value.type == TokenType::CHAR)
         {
             return literal->value.lexeme[0];
@@ -50,80 +105,66 @@ Value Interpreter::evaluate(const Expr* expr)
         throw RuntimeError("Unknown literal");
     }
 
-    // Evaluate a variable.
-    if (auto variable = dynamic_cast<const Variable*>(expr))
+    // ---------------------------------------------------------
+    // Variable lookup
+    // ---------------------------------------------------------
+
+    if (auto variable =
+            dynamic_cast<const Variable*>(expr))
     {
-        auto it = environment.find(variable->name.lexeme);
-
-        // Variable does not exist.
-        if (it == environment.end())
-        {
-            throw RuntimeError(
-                "Undefined variable '" +
-                variable->name.lexeme +
-                "'");
-        }
-
-        return it->second;
+        return lookup(
+            variable->name.lexeme);
     }
 
-    // Evaluate an assignment.
-    //
-    // Examples:
-    //
-    // name = "Orbit";
-    // letter = 'A';
-    if (auto assignment = dynamic_cast<const Assignment*>(expr))
+    // ---------------------------------------------------------
+    // Variable assignment
+    // ---------------------------------------------------------
+
+    if (auto assignment =
+            dynamic_cast<const Assignment*>(expr))
     {
-        // Assignment is only valid for an existing variable.
-        auto it = environment.find(assignment->name.lexeme);
+        Value value =
+            evaluate(assignment->value.get());
 
-        if (it == environment.end())
-        {
-            throw RuntimeError(
-                "Undefined variable '" +
-                assignment->name.lexeme +
-                "'");
-        }
-
-        Value value = evaluate(assignment->value.get());
-
-        it->second = value;
+        assign(
+            assignment->name.lexeme,
+            value);
 
         return value;
     }
 
-    // Evaluate an assignment to an array element.
-    //
-    // Examples:
-    //
-    // numbers[1] = 99;
-    // names[1] = "Mars";
-    // letters[1] = 'Z';
+    // ---------------------------------------------------------
+    // Array element assignment
+    // ---------------------------------------------------------
+
     if (auto indexAssignment =
             dynamic_cast<const IndexAssignment*>(expr))
     {
-        Value object = evaluate(indexAssignment->object.get());
-        Value index = evaluate(indexAssignment->index.get());
-        Value value = evaluate(indexAssignment->value.get());
+        Value object =
+            evaluate(indexAssignment->object.get());
 
-        // The object being indexed must be an array.
-        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+        Value index =
+            evaluate(indexAssignment->index.get());
+
+        Value value =
+            evaluate(indexAssignment->value.get());
+
+        if (!std::holds_alternative<
+                std::shared_ptr<ArrayValue>>(object))
         {
             throw RuntimeError(
                 "Only nebula arrays can be indexed");
         }
 
-        // Array indexes must be numbers.
         if (!std::holds_alternative<double>(index))
         {
             throw RuntimeError(
                 "Array index must be a number");
         }
 
-        double indexValue = std::get<double>(index);
+        double indexValue =
+            std::get<double>(index);
 
-        // Array indexes must be whole numbers.
         if (std::floor(indexValue) != indexValue)
         {
             throw RuntimeError(
@@ -137,38 +178,33 @@ Value Interpreter::evaluate(const Expr* expr)
         }
 
         auto array =
-            std::get<std::shared_ptr<ArrayValue>>(object);
+            std::get<std::shared_ptr<ArrayValue>>(
+                object);
 
-        // Check that the index is inside the array.
         if (indexValue >= array->elements.size())
         {
             throw RuntimeError(
                 "Array index out of bounds");
         }
 
-        // Replace the existing element.
         array->elements[
             static_cast<size_t>(indexValue)] = value;
 
         return value;
     }
 
-    // Evaluate a nebula array literal.
-    //
-    // Examples:
-    //
-    // [10, 20, 30]
-    // ["Earth", "Mars"]
-    // ['A', 'B', 'C']
-    //
-    // Every element is evaluated first and then stored
-    // inside the array.
+    // ---------------------------------------------------------
+    // Nebula literal
+    // ---------------------------------------------------------
+
     if (auto nebula =
             dynamic_cast<const NebulaLiteral*>(expr))
     {
-        auto array = std::make_shared<ArrayValue>();
+        auto array =
+            std::make_shared<ArrayValue>();
 
-        for (const auto& element : nebula->elements)
+        for (const auto& element :
+             nebula->elements)
         {
             array->elements.push_back(
                 evaluate(element.get()));
@@ -177,36 +213,35 @@ Value Interpreter::evaluate(const Expr* expr)
         return array;
     }
 
-    // Evaluate array indexing.
-    //
-    // Examples:
-    //
-    // numbers[0]
-    // names[1]
-    // letters[2]
+    // ---------------------------------------------------------
+    // Array indexing
+    // ---------------------------------------------------------
+
     if (auto indexExpr =
             dynamic_cast<const IndexExpr*>(expr))
     {
-        Value object = evaluate(indexExpr->object.get());
-        Value index = evaluate(indexExpr->index.get());
+        Value object =
+            evaluate(indexExpr->object.get());
 
-        // The object being indexed must be an array.
-        if (!std::holds_alternative<std::shared_ptr<ArrayValue>>(object))
+        Value index =
+            evaluate(indexExpr->index.get());
+
+        if (!std::holds_alternative<
+                std::shared_ptr<ArrayValue>>(object))
         {
             throw RuntimeError(
                 "Only nebula arrays can be indexed");
         }
 
-        // Array indexes must be numbers.
         if (!std::holds_alternative<double>(index))
         {
             throw RuntimeError(
                 "Array index must be a number");
         }
 
-        double indexValue = std::get<double>(index);
+        double indexValue =
+            std::get<double>(index);
 
-        // Array indexes must be whole numbers.
         if (std::floor(indexValue) != indexValue)
         {
             throw RuntimeError(
@@ -220,9 +255,9 @@ Value Interpreter::evaluate(const Expr* expr)
         }
 
         auto array =
-            std::get<std::shared_ptr<ArrayValue>>(object);
+            std::get<std::shared_ptr<ArrayValue>>(
+                object);
 
-        // Check that the index is inside the array.
         if (indexValue >= array->elements.size())
         {
             throw RuntimeError(
@@ -233,17 +268,50 @@ Value Interpreter::evaluate(const Expr* expr)
             static_cast<size_t>(indexValue)];
     }
 
-    // Evaluate a unary expression.
-    //
-    // Examples:
-    //
-    // -10
-    // -age
-    // !true
-    // !false
-    if (auto unary = dynamic_cast<const Unary*>(expr))
+    // ---------------------------------------------------------
+    // Function call
+    // ---------------------------------------------------------
+
+    if (auto call =
+            dynamic_cast<const Call*>(expr))
     {
-        Value right = evaluate(unary->right.get());
+        Value callee =
+            evaluate(call->callee.get());
+
+        if (!std::holds_alternative<
+                std::shared_ptr<FunctionValue>>(callee))
+        {
+            throw RuntimeError(
+                "Only warp functions can be called");
+        }
+
+        std::vector<Value> arguments;
+
+        for (const auto& argument :
+             call->arguments)
+        {
+            arguments.push_back(
+                evaluate(argument.get()));
+        }
+
+        auto function =
+            std::get<std::shared_ptr<FunctionValue>>(
+                callee);
+
+        return callFunction(
+            function,
+            arguments);
+    }
+
+    // ---------------------------------------------------------
+    // Unary expressions
+    // ---------------------------------------------------------
+
+    if (auto unary =
+            dynamic_cast<const Unary*>(expr))
+    {
+        Value right =
+            evaluate(unary->right.get());
 
         if (unary->op.type == TokenType::MINUS)
         {
@@ -267,21 +335,29 @@ Value Interpreter::evaluate(const Expr* expr)
             return !std::get<bool>(right);
         }
 
-        throw RuntimeError("Unknown unary operator");
+        throw RuntimeError(
+            "Unknown unary operator");
     }
 
-    // Evaluate a binary expression recursively.
-    if (auto binary = dynamic_cast<const Binary*>(expr))
+    // ---------------------------------------------------------
+    // Binary expressions
+    // ---------------------------------------------------------
+
+    if (auto binary =
+            dynamic_cast<const Binary*>(expr))
     {
-        Value left = evaluate(binary->left.get());
-        Value right = evaluate(binary->right.get());
+        Value left =
+            evaluate(binary->left.get());
+
+        Value right =
+            evaluate(binary->right.get());
 
         switch (binary->op.type)
         {
-        // Addition.
-        //
-        // Number + number
-        // String + string
+        // -----------------------------------------------------
+        // Addition
+        // -----------------------------------------------------
+
         case TokenType::PLUS:
 
             if (std::holds_alternative<double>(left) &&
@@ -301,6 +377,10 @@ Value Interpreter::evaluate(const Expr* expr)
             throw RuntimeError(
                 "Operands of '+' must both be numbers or both be strings");
 
+        // -----------------------------------------------------
+        // Subtraction
+        // -----------------------------------------------------
+
         case TokenType::MINUS:
 
             if (!std::holds_alternative<double>(left) ||
@@ -313,6 +393,10 @@ Value Interpreter::evaluate(const Expr* expr)
             return std::get<double>(left) -
                    std::get<double>(right);
 
+        // -----------------------------------------------------
+        // Multiplication
+        // -----------------------------------------------------
+
         case TokenType::STAR:
 
             if (!std::holds_alternative<double>(left) ||
@@ -324,6 +408,10 @@ Value Interpreter::evaluate(const Expr* expr)
 
             return std::get<double>(left) *
                    std::get<double>(right);
+
+        // -----------------------------------------------------
+        // Division
+        // -----------------------------------------------------
 
         case TokenType::SLASH:
 
@@ -343,7 +431,43 @@ Value Interpreter::evaluate(const Expr* expr)
             return std::get<double>(left) /
                    std::get<double>(right);
 
-        // Comparison operators currently work with numbers.
+        // -----------------------------------------------------
+        // Modulo
+        //
+        // fmod is used because Orbit numbers are represented
+        // as double, so both integer and decimal modulo work.
+        //
+        // 17 % 5     -> 2
+        // 10.5 % 3   -> 1.5
+        // -----------------------------------------------------
+
+        case TokenType::MODULO:
+        {
+            if (!std::holds_alternative<double>(left) ||
+                !std::holds_alternative<double>(right))
+            {
+                throw RuntimeError(
+                    "Operands of '%' must be numbers");
+            }
+
+            double rightValue =
+                std::get<double>(right);
+
+            if (rightValue == 0)
+            {
+                throw RuntimeError(
+                    "Modulo by zero");
+            }
+
+            return std::fmod(
+                std::get<double>(left),
+                rightValue);
+        }
+
+        // -----------------------------------------------------
+        // Comparison
+        // -----------------------------------------------------
+
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
         case TokenType::GREATER:
@@ -363,30 +487,37 @@ Value Interpreter::evaluate(const Expr* expr)
                 std::get<double>(right);
 
             if (binary->op.type == TokenType::LESS)
+            {
                 return leftValue < rightValue;
+            }
 
             if (binary->op.type == TokenType::LESS_EQUAL)
+            {
                 return leftValue <= rightValue;
+            }
 
             if (binary->op.type == TokenType::GREATER)
+            {
                 return leftValue > rightValue;
+            }
 
             return leftValue >= rightValue;
         }
 
-        // Equality works with:
-        // - numbers
-        // - booleans
-        // - strings
-        // - chars
-        // - arrays
+        // -----------------------------------------------------
+        // Equality
+        // -----------------------------------------------------
+
         case TokenType::EQUAL_EQUAL:
             return left == right;
 
         case TokenType::NOT_EQUAL:
             return left != right;
 
-        // Logical AND.
+        // -----------------------------------------------------
+        // Logical AND
+        // -----------------------------------------------------
+
         case TokenType::AND:
 
             if (!std::holds_alternative<bool>(left) ||
@@ -399,7 +530,10 @@ Value Interpreter::evaluate(const Expr* expr)
             return std::get<bool>(left) &&
                    std::get<bool>(right);
 
-        // Logical OR.
+        // -----------------------------------------------------
+        // Logical OR
+        // -----------------------------------------------------
+
         case TokenType::OR:
 
             if (!std::holds_alternative<bool>(left) ||
@@ -418,7 +552,10 @@ Value Interpreter::evaluate(const Expr* expr)
         }
     }
 
-    // Evaluate a parenthesized expression.
+    // ---------------------------------------------------------
+    // Grouping
+    // ---------------------------------------------------------
+
     if (auto grouping =
             dynamic_cast<const Grouping*>(expr))
     {
@@ -426,18 +563,17 @@ Value Interpreter::evaluate(const Expr* expr)
             grouping->expression.get());
     }
 
-    throw RuntimeError("Unknown expression");
+    throw RuntimeError(
+        "Unknown expression");
 }
 
 void Interpreter::printValue(const Value& value)
 {
-    // Print numbers.
     if (std::holds_alternative<double>(value))
     {
         std::cout << std::get<double>(value);
     }
 
-    // Print booleans.
     else if (std::holds_alternative<bool>(value))
     {
         std::cout
@@ -446,26 +582,25 @@ void Interpreter::printValue(const Value& value)
                     : "false");
     }
 
-    // Print strings.
     else if (std::holds_alternative<std::string>(value))
     {
         std::cout
             << std::get<std::string>(value);
     }
 
-    // Print characters.
     else if (std::holds_alternative<char>(value))
     {
         std::cout
             << std::get<char>(value);
     }
 
-    // Print nebula arrays.
     else if (
-        std::holds_alternative<std::shared_ptr<ArrayValue>>(value))
+        std::holds_alternative<
+            std::shared_ptr<ArrayValue>>(value))
     {
         auto array =
-            std::get<std::shared_ptr<ArrayValue>>(value);
+            std::get<std::shared_ptr<ArrayValue>>(
+                value);
 
         std::cout << "[";
 
@@ -473,8 +608,6 @@ void Interpreter::printValue(const Value& value)
              i < array->elements.size();
              i++)
         {
-            // printValue() does not add a newline,
-            // so nested values stay on the same line.
             printValue(array->elements[i]);
 
             if (i + 1 < array->elements.size())
@@ -485,38 +618,151 @@ void Interpreter::printValue(const Value& value)
 
         std::cout << "]";
     }
+
+    else if (
+        std::holds_alternative<
+            std::shared_ptr<FunctionValue>>(value))
+    {
+        std::cout << "<warp function>";
+    }
+}
+
+Value Interpreter::callFunction(
+    const std::shared_ptr<FunctionValue>& function,
+    const std::vector<Value>& arguments)
+{
+    if (!function ||
+        function->declaration == nullptr)
+    {
+        throw RuntimeError(
+            "Invalid warp function");
+    }
+
+    const FunctionStmt* declaration =
+        function->declaration;
+
+    // Check argument count.
+    if (arguments.size() != declaration->params.size())
+    {
+        throw RuntimeError(
+            "Function '" +
+            declaration->name.lexeme +
+            "' expects " +
+            std::to_string(declaration->params.size()) +
+            " argument(s), but received " +
+            std::to_string(arguments.size()));
+    }
+
+    // Create the function's local scope.
+    environments.emplace_back();
+
+    functionDepth++;
+
+    // Bind each argument to its parameter.
+    for (size_t i = 0;
+         i < declaration->params.size();
+         i++)
+    {
+        define(
+            declaration->params[i].lexeme,
+            arguments[i]);
+    }
+
+    try
+    {
+        // Execute the function body inside the new scope.
+        for (const auto& statement :
+             declaration->body)
+        {
+            execute(statement.get());
+        }
+    }
+    catch (const ReturnSignal& signal)
+    {
+        functionDepth--;
+        environments.pop_back();
+
+        // A bare return does not carry a value.
+        //
+        // Orbit functions currently use Value as their
+        // expression result type, so a bare return produces
+        // the numeric value 0 when the call is used as an
+        // expression.
+        //
+        // Calling the function as a standalone expression
+        // simply ignores this result.
+        if (!signal.value.has_value())
+        {
+            return 0.0;
+        }
+
+        return signal.value.value();
+    }
+
+    functionDepth--;
+    environments.pop_back();
+
+    // Reaching the end of a warp without returning a value
+    // produces 0 as its default result.
+    return 0.0;
+}
+
+void Interpreter::executeBlock(
+    const std::vector<std::unique_ptr<Stmt>>& statements)
+{
+    // Create a nested lexical scope.
+    environments.emplace_back();
+
+    try
+    {
+        for (const auto& statement : statements)
+        {
+            execute(statement.get());
+        }
+    }
+    catch (...)
+    {
+        environments.pop_back();
+        throw;
+    }
+
+    environments.pop_back();
 }
 
 void Interpreter::execute(const Stmt* stmt)
 {
-    // Variable declaration:
-    //
-    // dock age = 20;
-    // dock name = "Orbit";
-    // dock letter = 'O';
+    if (stmt == nullptr)
+    {
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // Variable declaration
+    // ---------------------------------------------------------
+
     if (auto var =
             dynamic_cast<const VarStmt*>(stmt))
     {
         Value value =
             evaluate(var->initializer.get());
 
-        environment[var->name.lexeme] = value;
+        define(
+            var->name.lexeme,
+            value);
 
         return;
     }
 
-    // Nebula declaration:
-    //
-    // nebula numbers = [10, 20, 30];
-    // nebula names = ["Earth", "Mars"];
-    // nebula letters = ['A', 'B', 'C'];
+    // ---------------------------------------------------------
+    // Nebula declaration
+    // ---------------------------------------------------------
+
     if (auto nebula =
             dynamic_cast<const NebulaStmt*>(stmt))
     {
         Value value =
             evaluate(nebula->initializer.get());
 
-        // The initializer must actually evaluate to an array.
         if (!std::holds_alternative<
                 std::shared_ptr<ArrayValue>>(value))
         {
@@ -524,16 +770,66 @@ void Interpreter::execute(const Stmt* stmt)
                 "Nebula initializer must be an array");
         }
 
-        environment[nebula->name.lexeme] = value;
+        define(
+            nebula->name.lexeme,
+            value);
 
         return;
     }
 
-    // Print statement:
-    //
-    // transmit(age);
-    // transmit(name);
-    // transmit(letter);
+    // ---------------------------------------------------------
+    // Warp function declaration
+    // ---------------------------------------------------------
+
+    if (auto function =
+            dynamic_cast<const FunctionStmt*>(stmt))
+    {
+        auto functionValue =
+            std::make_shared<FunctionValue>(
+                function);
+
+        define(
+            function->name.lexeme,
+            functionValue);
+
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // Return statement
+    // ---------------------------------------------------------
+
+    if (auto returnStmt =
+            dynamic_cast<const ReturnStmt*>(stmt))
+    {
+        // return is only valid inside a warp function.
+        if (functionDepth <= 0)
+        {
+            throw RuntimeError(
+                "'return' can only be used inside a warp function");
+        }
+
+        // Bare return.
+        if (!returnStmt->value)
+        {
+            throw ReturnSignal(
+                std::nullopt);
+        }
+
+        // Evaluate the return expression before
+        // leaving the current function scope.
+        Value value =
+            evaluate(
+                returnStmt->value.get());
+
+        throw ReturnSignal(
+            value);
+    }
+
+    // ---------------------------------------------------------
+    // Print statement
+    // ---------------------------------------------------------
+
     if (auto print =
             dynamic_cast<const PrintStmt*>(stmt))
     {
@@ -542,17 +838,15 @@ void Interpreter::execute(const Stmt* stmt)
 
         printValue(value);
 
-        // Add the newline only once, after the complete
-        // value has been printed.
         std::cout << std::endl;
 
         return;
     }
 
-    // Input statement.
-    //
-    // receive() accepts input according to the
-    // type of the target variable or array element.
+    // ---------------------------------------------------------
+    // Input statement
+    // ---------------------------------------------------------
+
     if (auto input =
             dynamic_cast<const InputStmt*>(stmt))
     {
@@ -561,23 +855,11 @@ void Interpreter::execute(const Stmt* stmt)
                 dynamic_cast<const Variable*>(
                     input->target.get()))
         {
-            auto it =
-                environment.find(
-                    variable->name.lexeme);
-
-            if (it == environment.end())
-            {
-                throw RuntimeError(
-                    "Undefined variable '" +
-                    variable->name.lexeme +
-                    "'");
-            }
-
-            Value& target = it->second;
+            Value target =
+                lookup(variable->name.lexeme);
 
             std::cout << "Enter value: ";
 
-            // Number input.
             if (std::holds_alternative<double>(target))
             {
                 double value;
@@ -587,6 +869,7 @@ void Interpreter::execute(const Stmt* stmt)
                 if (std::cin.fail())
                 {
                     std::cin.clear();
+
                     std::string invalid;
                     std::cin >> invalid;
 
@@ -594,13 +877,14 @@ void Interpreter::execute(const Stmt* stmt)
                         "receive() expects a number");
                 }
 
-                target = value;
+                assign(
+                    variable->name.lexeme,
+                    value);
             }
 
-            // String input.
-            //
-            // Input is read until whitespace.
-            else if (std::holds_alternative<std::string>(target))
+            else if (
+                std::holds_alternative<std::string>(
+                    target))
             {
                 std::string value;
 
@@ -612,11 +896,13 @@ void Interpreter::execute(const Stmt* stmt)
                         "receive() expects a string");
                 }
 
-                target = value;
+                assign(
+                    variable->name.lexeme,
+                    value);
             }
 
-            // Character input.
-            else if (std::holds_alternative<char>(target))
+            else if (
+                std::holds_alternative<char>(target))
             {
                 char value;
 
@@ -628,7 +914,9 @@ void Interpreter::execute(const Stmt* stmt)
                         "receive() expects a character");
                 }
 
-                target = value;
+                assign(
+                    variable->name.lexeme,
+                    value);
             }
 
             else
@@ -641,6 +929,12 @@ void Interpreter::execute(const Stmt* stmt)
         }
 
         // receive(numbers[index]);
+        //
+        // evaluate(object) already supports nested indexing,
+        // so this also works for:
+        //
+        // receive(matrix[0][1]);
+        // receive(cube[1][0][1]);
         if (auto indexExpr =
                 dynamic_cast<const IndexExpr*>(
                     input->target.get()))
@@ -651,7 +945,6 @@ void Interpreter::execute(const Stmt* stmt)
             Value index =
                 evaluate(indexExpr->index.get());
 
-            // The object being indexed must be an array.
             if (!std::holds_alternative<
                     std::shared_ptr<ArrayValue>>(object))
             {
@@ -659,7 +952,6 @@ void Interpreter::execute(const Stmt* stmt)
                     "Only nebula arrays can be indexed");
             }
 
-            // Array indexes must be numbers.
             if (!std::holds_alternative<double>(index))
             {
                 throw RuntimeError(
@@ -669,7 +961,6 @@ void Interpreter::execute(const Stmt* stmt)
             double indexValue =
                 std::get<double>(index);
 
-            // Array indexes must be whole numbers.
             if (std::floor(indexValue) != indexValue)
             {
                 throw RuntimeError(
@@ -684,9 +975,9 @@ void Interpreter::execute(const Stmt* stmt)
 
             auto array =
                 std::get<
-                    std::shared_ptr<ArrayValue>>(object);
+                    std::shared_ptr<ArrayValue>>(
+                        object);
 
-            // Check that the index is inside the array.
             if (indexValue >= array->elements.size())
             {
                 throw RuntimeError(
@@ -699,7 +990,6 @@ void Interpreter::execute(const Stmt* stmt)
 
             std::cout << "Enter value: ";
 
-            // Number input.
             if (std::holds_alternative<double>(target))
             {
                 double value;
@@ -709,6 +999,7 @@ void Interpreter::execute(const Stmt* stmt)
                 if (std::cin.fail())
                 {
                     std::cin.clear();
+
                     std::string invalid;
                     std::cin >> invalid;
 
@@ -719,8 +1010,8 @@ void Interpreter::execute(const Stmt* stmt)
                 target = value;
             }
 
-            // String input.
-            else if (std::holds_alternative<std::string>(target))
+            else if (
+                std::holds_alternative<std::string>(target))
             {
                 std::string value;
 
@@ -735,8 +1026,8 @@ void Interpreter::execute(const Stmt* stmt)
                 target = value;
             }
 
-            // Character input.
-            else if (std::holds_alternative<char>(target))
+            else if (
+                std::holds_alternative<char>(target))
             {
                 char value;
 
@@ -764,20 +1055,16 @@ void Interpreter::execute(const Stmt* stmt)
             "Invalid receive target");
     }
 
-    // Conditional statement:
-    //
-    // when (condition) {
-    //     statements
-    // } else {
-    //     statements
-    // }
+    // ---------------------------------------------------------
+    // when
+    // ---------------------------------------------------------
+
     if (auto ifStmt =
             dynamic_cast<const IfStmt*>(stmt))
     {
         Value condition =
             evaluate(ifStmt->condition.get());
 
-        // The condition of a when statement must be boolean.
         if (!std::holds_alternative<bool>(condition))
         {
             throw RuntimeError(
@@ -786,7 +1073,6 @@ void Interpreter::execute(const Stmt* stmt)
 
         if (std::get<bool>(condition))
         {
-            // Execute the when branch.
             for (const auto& statement :
                  ifStmt->thenBranch)
             {
@@ -795,7 +1081,6 @@ void Interpreter::execute(const Stmt* stmt)
         }
         else
         {
-            // Execute the else branch if it exists.
             for (const auto& statement :
                  ifStmt->elseBranch)
             {
@@ -806,11 +1091,10 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
-    // While loop:
-    //
-    // orbiting (condition) {
-    //     statements
-    // }
+    // ---------------------------------------------------------
+    // orbiting
+    // ---------------------------------------------------------
+
     if (auto whileStmt =
             dynamic_cast<const WhileStmt*>(stmt))
     {
@@ -820,21 +1104,17 @@ void Interpreter::execute(const Stmt* stmt)
                 evaluate(
                     whileStmt->condition.get());
 
-            // The condition of an orbiting statement
-            // must be boolean.
             if (!std::holds_alternative<bool>(condition))
             {
                 throw RuntimeError(
                     "Condition of 'orbiting' must be boolean");
             }
 
-            // Stop when the condition becomes false.
             if (!std::get<bool>(condition))
             {
                 break;
             }
 
-            // Execute every statement in the loop body.
             for (const auto& statement :
                  whileStmt->body)
             {
@@ -845,11 +1125,10 @@ void Interpreter::execute(const Stmt* stmt)
         return;
     }
 
-    // Standalone expression:
-    //
-    // age = 25;
-    // name = "Orbit";
-    // letter = 'A';
+    // ---------------------------------------------------------
+    // Standalone expression
+    // ---------------------------------------------------------
+
     if (auto expressionStmt =
             dynamic_cast<const ExpressionStmt*>(stmt))
     {
@@ -865,9 +1144,44 @@ void Interpreter::interpret(
 {
     try
     {
-        // Execute every statement in the Orbit program in order.
-        for (const auto& statement : statements)
+        // Register all top-level warp functions first.
+        //
+        // This allows:
+        //
+        // greet();
+        //
+        // to work even when the warp declaration appears
+        // later in the source file.
+        for (const auto& statement :
+             statements)
         {
+            if (auto function =
+                    dynamic_cast<const FunctionStmt*>(
+                        statement.get()))
+            {
+                auto functionValue =
+                    std::make_shared<FunctionValue>(
+                        function);
+
+                define(
+                    function->name.lexeme,
+                    functionValue);
+            }
+        }
+
+        // Execute the actual program.
+        //
+        // Function declarations are already registered,
+        // so they do not need to execute a second time.
+        for (const auto& statement :
+             statements)
+        {
+            if (dynamic_cast<const FunctionStmt*>(
+                    statement.get()))
+            {
+                continue;
+            }
+
             execute(statement.get());
         }
     }

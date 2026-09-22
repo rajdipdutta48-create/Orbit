@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
 import "./App.css";
 
+// Use the deployed Render backend in production while keeping the local backend as the default for development.
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 /*
  * Orbit documentation.
  *
@@ -1623,7 +1626,7 @@ transmit(message);`);
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/run",
+        `${API_URL}/api/run`,
         {
           method: "POST",
 
